@@ -1,6 +1,4 @@
 import sys
-sys.path.append('/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain')
-
 import os
 import time
 import numpy as np
@@ -11,13 +9,9 @@ from tools.logger import info
 
 class Env(object):
     def __init__(self, args):
-        """
-        初始化环境
-        :param args:
-        """
         self.args = args
-        self.DATA_PATH = '/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain/datasets' # data path
-        self.ROOT_PATH = '/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain' # code path
+        self.DATA_PATH = '' # data path
+        self.ROOT_PATH = '' # code path
 
         self.DATA_PATH = os.path.join(self.DATA_PATH, self.args.dataset)
         self.BASE_PATH = os.path.join(self.ROOT_PATH, 'exp_report')
@@ -67,8 +61,7 @@ class Env(object):
         info(f'Code will run in {self.device}')
 
     def _init_wandb(self):
-        # wandb.login(key='24236832d74a669a17a0a12d7d2bca196fcde66c')
-        wandb.init(project="AI4Sim_SupplyChain",config=self.args)
+        wandb.init(project="",config=self.args)
 
 
 

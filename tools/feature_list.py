@@ -3,10 +3,6 @@ numerical_features = {
     'Order Item Discount', 'Order Item Discount Rate', 'Order Item Product Price', 'Order Item Profit Ratio',\
     'Order Item Quantity', 'Sales', 'Order Item Total', 'Order Profit Per Order', 'Product Price',\
     ],
-    'DataCo_OOD': ['Benefit per order', 'Sales per customer', 'Latitude', 'Longitude',\
-    'Order Item Discount', 'Order Item Discount Rate', 'Order Item Product Price', 'Order Item Profit Ratio',\
-    'Order Item Quantity', 'Sales', 'Order Item Total', 'Order Profit Per Order', 'Product Price',\
-    ],
     'LSCRW':['profit_per_order','sales_per_customer', 'latitude', 'longitude', 'order_item_discount', \
             'order_item_discount_rate', 'order_item_product_price', 'order_item_profit_ratio', 'order_item_quantity',\
             'sales', 'order_item_total_amount', 'order_profit_per_order', 'product_price'],
@@ -16,16 +12,6 @@ numerical_features = {
 
 categorical_features = {
     'DataCo': ['Type', 'Category Id', 'Customer City', 'Delivery Status', \
-                'Customer Country', 'Customer Id','Customer Segment', 'Order Zipcode', \
-                'Customer State', 'Customer Zipcode','Department Name', 'Market', 'Order City', \
-                'Order Country', 'Order Customer Id', 'Order Item Cardprod Id', 'Order Region',\
-                'Order State', 'Product Card Id', 'Product Category Id', 'Late_delivery_risk', \
-                'Shipping Mode', 'order date (DateOrders)_year', 'order date (DateOrders)_month', 'order date (DateOrders)_day',\
-                'order date (DateOrders)_hour','shipping date (DateOrders)_year', \
-                'shipping date (DateOrders)_month','shipping date (DateOrders)_day', \
-                'shipping date (DateOrders)_hour', 'Days for shipment (scheduled)', 'Days for shipping (real)', \
-                'order_date_count', 'shipping_date_count'],
-    'DataCo_OOD': ['Type', 'Category Id', 'Customer City', 'Delivery Status', \
                 'Customer Country', 'Customer Id','Customer Segment', 'Order Zipcode', \
                 'Customer State', 'Customer Zipcode','Department Name', 'Market', 'Order City', \
                 'Order Country', 'Order Customer Id', 'Order Item Cardprod Id', 'Order Region',\
@@ -56,7 +42,6 @@ categorical_features = {
 
 date_features = {
                 'DataCo': ['order date (DateOrders)', 'shipping date (DateOrders)'],
-                'DataCo_OOD': ['order date (DateOrders)', 'shipping date (DateOrders)'],
                 'LSCRW':['order_date', 'shipping_date'],
                 'GlobalStore': ['Order Date', 'Ship Date'],
                 'OAS':['order_date', 'shipment_date'],
@@ -72,13 +57,6 @@ product_info = {
                         'Order Item Total',
                         'order_date_count',
                         'Sales per customer'],
-                'DataCo_OOD': ['Product Price',
-                        'Order Item Product Price',
-                        'Order Item Quantity',
-                        'Sales',
-                        'Order Item Total',
-                        'order_date_count',
-                        'Sales per customer'],
                 'LSCRW':['order_item_discount_rate'],
                 'GlobalStore': ['Country', 'Market', 'Market2'],
                 'OAS':['order_date_count'],
@@ -87,7 +65,6 @@ product_info = {
 
 order_info = {
             'DataCo':['Order Customer Id', 'Customer Id'],
-            'DataCo_OOD':['Order Customer Id', 'Customer Id'],
             'LSCRW':['customer_city',
                 'customer_country',
                 'customer_state',
@@ -111,12 +88,6 @@ customer_info = {'DataCo': ['Product Category Id',
                         'Category Id',
                         'Department Name',
                         'Product Card Id',
-                        'Order Item Cardprod Id'],
-                'DataCo_OOD': ['Product Category Id',
-                                        'Category Id',
-                                        'Department Name',
-                                        'Product Card Id',
-                                        'Order Item Cardprod Id'],
                 'LSCRW':['product_category_id',
                         'product_card_id',
                         'category_id',
@@ -141,29 +112,6 @@ customer_info = {'DataCo': ['Product Category Id',
 
 shipping_info = {
                 'DataCo': ['Order Region',
-                'Latitude',
-                'Longitude',
-                'Benefit per order',
-                'Order Item Discount',
-                'Order Item Discount Rate',
-                'Order Item Profit Ratio',
-                'Order Profit Per Order',
-                'Type',
-                'Order Zipcode',
-                'Market',
-                'Order City',
-                'Order Country',
-                'Order State',
-                'Customer City',
-                'Customer Country',
-                'Customer Segment',
-                'Customer State',
-                'Customer Zipcode',
-                'order date (DateOrders)_year',
-                'order date (DateOrders)_month',
-                'order date (DateOrders)_day',
-                'order date (DateOrders)_hour'],
-                'DataCo_OOD': ['Order Region',
                 'Latitude',
                 'Longitude',
                 'Benefit per order',
@@ -217,7 +165,6 @@ shipping_info = {
 
 decision = {
             'DataCo': ['Shipping Mode'],
-            'DataCo_OOD': ['Shipping Mode'],
             'LSCRW':['shipping_mode'],
             'GlobalStore': ['Ship Mode'],
             'OAS':['Shipment Mode'],
@@ -225,7 +172,6 @@ decision = {
 
 label = {
         'DataCo': ['Late_delivery_risk', 'Days for shipping (real)', 'on_time'],
-        'DataCo_OOD': ['Late_delivery_risk', 'Days for shipping (real)', 'on_time'],
         'LSCRW':['late_risk','day_for_shipping', 'on_time'],
         'GlobalStore': ['late_risk','day_for_shipping','on_time'],
         'OAS':['late_risk', 'day_for_shipping','on_time'],
@@ -233,12 +179,7 @@ label = {
 
 
 profit ={
-        # 'DataCo': [23.119138475584577, 20.681653988361383, 21.211025910849173, 22.07875551481838],
-        # 'LSCRW':  [25.99, 20.92, 18.87, 22.36],
-        # 'GlobalStore': [1/59.7, 1/32.8, 1/27.1, 1/18.4],
-        # 'OAS':[128.655,124.340,127.683,128.2513],
         'DataCo': [23, 20, 17.8, 18.2],
-        'DataCo_OOD': [23, 20, 17.8, 18.2],
         'LSCRW':  [18.82, 24.10, 16.48, 18.15],
         'GlobalStore': [0.25774, 0.37547, 0.34145, 0.36541],
         'OAS':[115.7538,116.26833,113.63881,105.66616],
@@ -246,7 +187,6 @@ profit ={
 
 retrieva_index = {
         'DataCo': [len(product_info['DataCo'])+ len(order_info['DataCo']), len(product_info['DataCo'])+ len(order_info['DataCo']) + len(customer_info['DataCo'])],
-        'DataCo_OOD': [len(product_info['DataCo'])+ len(order_info['DataCo']), len(product_info['DataCo'])+ len(order_info['DataCo']) + len(customer_info['DataCo'])],
         'LSCRW':  [len(product_info['LSCRW'])+ len(order_info['LSCRW']), len(product_info['LSCRW'])+ len(order_info['LSCRW']) + len(customer_info['LSCRW'])],
         'GlobalStore': [len(product_info['GlobalStore'])+ len(order_info['GlobalStore']), len(product_info['GlobalStore'])+ len(order_info['GlobalStore'])+1],
         'OAS':[len(product_info['OAS'])+ len(order_info['OAS']), len(product_info['OAS'])+ len(order_info['OAS']) + len(customer_info['OAS'])],

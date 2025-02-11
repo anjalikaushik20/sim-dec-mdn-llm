@@ -1,6 +1,4 @@
 import sys
-sys.path.append('/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain')
-
 import argparse
 import time
 import torch
@@ -23,21 +21,8 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=42)
 
     # ------------------------ Training Setting
-    # DataCo
-    # parser.add_argument('--ckpt', type=str, default='/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain/exp_report/DataCo/ckpt/01-17-15_DataCo_epoch817.pth')
 
-    # LSCRW
-    # parser.add_argument('--ckpt', type=str, default='/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain/exp_report/LSCRW/ckpt/01-17-14_LSCRW_epoch57.pth')
-
-    # GlobalStore
-    # parser.add_argument('--ckpt', type=str, default='/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain/exp_report/GlobalStore/ckpt/01-17-14_GlobalStore_epoch476.pth')
-
-    # OAS
-    parser.add_argument('--ckpt', type=str, default='/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain/exp_report/OAS/ckpt/01-17-14_OAS_epoch223.pth')
-
-
-
-    # parser.add_argument('--ckpt', type=str, default=None)
+    parser.add_argument('--ckpt', type=str, default=None)
     parser.add_argument('--ckpt_start_epoch', type=int, default=0)
 
     parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD'])
@@ -72,12 +57,12 @@ def parse_args():
     parser.add_argument('--mi_coeff', type=float, default=10)
     parser.add_argument('--ma_coeff', type=float, default=1)
 
-    parser.add_argument('--otr_reward_coeff', type=float, default=100)
+    parser.add_argument('--otr_reward_coeff', type=float, default=1)
 
     parser.add_argument('--reward_smoothing_factor', type=float, default=0.5)
 
-    parser.add_argument('--mip_coeff', type=float, default=10)
-    parser.add_argument('--mil_coeff', type=float, default=10)
+    parser.add_argument('--mip_coeff', type=float, default=1)
+    parser.add_argument('--mil_coeff', type=float, default=1)
 
 
     # ----------------------- logger

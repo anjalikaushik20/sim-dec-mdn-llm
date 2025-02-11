@@ -1,6 +1,4 @@
 import sys
-sys.path.append('/home/local/ASURITE/haoyueba/AI4Simulation_SuppluChain')
-
 import os
 import numpy as np
 import torch
@@ -58,7 +56,7 @@ class S_Loader(torch.utils.data.Dataset):
             data = self.numerical_features_process(self.ori_data, feature_list.numerical_features[self.env.args.dataset])
             data = self.date_features_process(data, feature_list.date_features[self.env.args.dataset])
             data, extra_data_list = self.categorical_features_process(data, extra_data_list, feature_list.categorical_features[self.env.args.dataset])
-            # data = data[feature_list.DataCo_condition + feature_list.decision[self.env.args.dataset] + feature_list.label[self.env.args.dataset]]
+            
 
             cost_m = extra_data_list[0]
             cost_mr = extra_data_list[1]
@@ -74,9 +72,7 @@ class S_Loader(torch.utils.data.Dataset):
             data = data[feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] + feature_list.customer_info[self.env.args.dataset] + \
                         feature_list.shipping_info[self.env.args.dataset] + feature_list.decision[self.env.args.dataset] + feature_list.label[self.env.args.dataset]]
 
-            # data = data[feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] + feature_list.customer_info[self.env.args.dataset] + \
-            #             feature_list.shipping_info[self.env.args.dataset] +  feature_list.info5[self.env.args.dataset] +  feature_list.info6[self.env.args.dataset] +\
-            #                   feature_list.info7[self.env.args.dataset] +  feature_list.info8[self.env.args.dataset] + feature_list.decision[self.env.args.dataset] + feature_list.label[self.env.args.dataset]]
+            
 
             if 'OOD' in self.env.args.dataset:
                 train_inputs, test_inputs = train_test_split(data, test_size=0.2, random_state=42)
@@ -90,11 +86,8 @@ class S_Loader(torch.utils.data.Dataset):
             train_inputs.to_csv(os.path.join(self.env.DATA_PATH, f'processed_{self.env.args.dataset}_train.csv'),index=None)
             val_inputs.to_csv(os.path.join(self.env.DATA_PATH, f'processed_{self.env.args.dataset}_val.csv'),index=None)
             test_inputs.to_csv(os.path.join(self.env.DATA_PATH, f'processed_{self.env.args.dataset}_test.csv'),index=None)
-            # tokenizer.save_pretrained(os.path.join(self.env.DATA_PATH, f'tokenizer'))
-        # 将划分后的数据保存回 self.inputs 作为训练、验证和测试集
-
-        # self.group_features(data)
-
+            
+        
         self.return_classes_num(data, feature_list.label[self.env.args.dataset])
         self.inputs = torch.FloatTensor(data.values)
         self.train_inputs = torch.FloatTensor(train_inputs.values)
@@ -106,45 +99,45 @@ class S_Loader(torch.utils.data.Dataset):
         self.cost_mrp = torch.FloatTensor(cost_mrp.values)
 
 
-        # 假设 self.cost_mrp 是一个 2D Tensor，其中最后一列需要归一化
+        
         last_column = self.cost_mrp[:, -1]
 
-        # 计算中位数和四分位间距
+        
         median = torch.median(last_column)
         q1 = torch.quantile(last_column, 0.25)
         q3 = torch.quantile(last_column, 0.75)
-        iqr = q3 - q1  # 四分位间距
+        iqr = q3 - q1  
 
-        # 设置 IQR 的下限和上限，用于处理极端值
+        
         lower_bound = q1 - 1.5 * iqr
         upper_bound = q3 + 1.5 * iqr
 
-        # 剪裁异常值
+        
         last_column_clipped = torch.clamp(last_column, min=lower_bound, max=upper_bound)
 
-        # 对剪裁后的数据进行归一化（映射到 [0, 1]）
+        
         min_val = last_column_clipped.min()
         max_val = last_column_clipped.max()
 
-        last_column_normalized = (last_column_clipped - min_val) / (max_val - min_val + 1e-8)  # 防止除零
+        last_column_normalized = (last_column_clipped - min_val) / (max_val - min_val + 1e-8)  
 
-        # 将归一化后的列更新到 self.cost_mrp 中
+        
         self.cost_mrp[:, -1] = last_column_normalized
 
 
-        # Extract the third and fourth columns
+        
         third_col = self.cost_mrp[:, 2]
         fourth_col = self.cost_mrp[:, 3]
 
 
-        # Find the maximum value in the third column to create a fixed-size list
+        
         num_groups = int(third_col.max().item()) + 1
         self.avg_profit = [0] * num_groups
 
-        # Calculate the mean of the fourth column for each unique value in the third column
+        
         for value in range(num_groups):
             mask = third_col == value
-            if mask.sum() > 0:  # Check if there are rows matching this value
+            if mask.sum() > 0:  
                 avg = fourth_col[mask].mean().item()
                 self.avg_profit[value] = avg
 
@@ -152,12 +145,12 @@ class S_Loader(torch.utils.data.Dataset):
 
     def return_classes_num(self, data, categorical_features):
         data = data.copy()
-        # 初始化一个字典来存储每个特征的类别数
-        # 对每个特征单独计算类别数
+        
+        
         for feature in categorical_features:
             unique_classes = len(np.unique(data[feature].astype(str)))
             self.feature_classes.append(unique_classes)
-        # 返回每个特征的类别数
+        
         return None
 
     def numerical_features_process(self, ori_data, numerical_features):
@@ -167,29 +160,29 @@ class S_Loader(torch.utils.data.Dataset):
         return data
 
     def categorical_features_process(self, ori_data, extra_data_list, categorical_features):
-        # 拷贝数据以避免修改原始数据
+        
         data_ori = ori_data.copy()
-        data_extra_list = [data.copy() for data in extra_data_list]  # 拷贝每个 extra_data
+        data_extra_list = [data.copy() for data in extra_data_list]  
 
-        # 对所有类别特征统一编码，且处理extra_data中可能不存在的特征
+        
         for feature in categorical_features:
             encoder = LabelEncoder()
 
-            # 检查特征是否存在于 ori_data 和每个 extra_data 中
+            
             combined_feature_data = pd.Series(dtype=str)
             if feature in data_ori.columns:
                 combined_feature_data = pd.concat([combined_feature_data, data_ori[feature].astype(str)])
 
-            # 检查并合并每个 extra_data 中的特征
+            
             for data in data_extra_list:
                 if feature in data.columns:
                     combined_feature_data = pd.concat([combined_feature_data, data[feature].astype(str)])
 
-            # 仅当有数据时进行编码
+            
             if not combined_feature_data.empty:
                 encoder.fit(combined_feature_data)
 
-                # 在原数据和每个额外数据表中应用相同编码
+                
                 if feature in data_ori.columns:
                     data_ori[feature] = encoder.transform(data_ori[feature].astype(str))
 
@@ -197,20 +190,9 @@ class S_Loader(torch.utils.data.Dataset):
                     if feature in data.columns:
                         data[feature] = encoder.transform(data[feature].astype(str))
 
-        # 返回处理后的数据
+        
         return data_ori, data_extra_list
-    # def categorical_features_process(self, ori_data, categorical_features):
-    #     data = ori_data.copy()
-
-    #     # 对每个特征单独使用 LabelEncoder
-    #     for feature in categorical_features:
-    #         encoder = LabelEncoder()
-    #         # 对每个特征的值进行编码
-    #         data[feature] = encoder.fit_transform(data[feature].astype(str))
-    #     # 返回处理后的数据和总类别数
-    #     return data
-
-
+    
 
     def date_features_process(self, ori_data, date_features):
         data = ori_data.copy()

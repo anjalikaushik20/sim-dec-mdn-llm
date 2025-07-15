@@ -87,7 +87,7 @@ order_info = {
 customer_info = {'DataCo': ['Product Category Id',
                         'Category Id',
                         'Department Name',
-                        'Product Card Id',
+                        'Product Card Id'],
                 'LSCRW':['product_category_id',
                         'product_card_id',
                         'category_id',

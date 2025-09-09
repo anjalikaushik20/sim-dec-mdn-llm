@@ -1,0 +1,8 @@
+torch>=1.0
+wandb
+numpy
+tqdm
+pandas
+scikit-learn
+transformers
+faiss-cpu

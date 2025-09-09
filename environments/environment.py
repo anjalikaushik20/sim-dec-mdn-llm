@@ -13,7 +13,8 @@ class Env(object):
         self.DATA_PATH = '' # data path
         self.ROOT_PATH = '' # code path
 
-        self.DATA_PATH = os.path.join(self.DATA_PATH, self.args.dataset)
+        data_dir = getattr(self.args, 'data_dir', 'datasets')
+        self.DATA_PATH = os.path.join(data_dir, self.args.dataset)
         self.BASE_PATH = os.path.join(self.ROOT_PATH, 'exp_report')
         self.BASE_PATH = os.path.join(self.BASE_PATH, self.args.dataset)
         self.CKPT_PATH = os.path.join(self.BASE_PATH, 'ckpt')

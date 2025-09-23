@@ -85,15 +85,21 @@ class CB_Session(object):
             ori_input = input_id.to(self.env.device)
             input_id = self.scaler.fit_transform(input_id)
             input_id = torch.FloatTensor(input_id).to(self.env.device)
+            
+            generated_mdn_params = self.model(input_id[:, :feature_dim], ori_input[:, feature_dim].long(), ori_input[:, feature_dim + 1:].long())
+            
+            targets = ori_input[:, feature_dim + 1:].float().unsqueeze(-1)  # [batch_size, seq_len, 1]
+            
+            # Use GMM loss instead of cross_entropy
+            loss = self.model.compute_loss(targets, generated_mdn_params)
 
+            # predicted_tokens = self.model(input_id[:,:feature_dim], ori_input[:,feature_dim].long(), ori_input[:,feature_dim+1:].long())
+            # total_loss = 0
+            # for i in range(label_dim):
+            #     classification_loss = torch.nn.CrossEntropyLoss()(predicted_tokens[i], ori_input[:, feature_dim+1 + i].long())
+            #     total_loss += classification_loss
 
-            predicted_tokens = self.model(input_id[:,:feature_dim], ori_input[:,feature_dim].long(), ori_input[:,feature_dim+1:].long())
-            total_loss = 0
-            for i in range(label_dim):
-                classification_loss = torch.nn.CrossEntropyLoss()(predicted_tokens[i], ori_input[:, feature_dim+1 + i].long())
-                total_loss += classification_loss
-
-            loss = total_loss / label_dim
+            # loss = total_loss / label_dim
             
             self.optimizer.zero_grad()
             loss.backward()
@@ -186,8 +192,8 @@ class CB_Session(object):
 
 
             selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-            predicted_tokens = self.model(input_id[:,:feature_dim], selected_embedding, ori_input[:,feature_dim+1:])
-        
+            # Use MDN outputs only once
+            generated_mdn_params = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
 
             profits = torch.tensor(self.avg_profit)
             weights = profits / profits.max()
@@ -197,10 +203,23 @@ class CB_Session(object):
             decision_weights = weights.to(self.env.device)
 
             profit_loss = F.cross_entropy(decision_prob, target_class_decision, weight=decision_weights)
+            
+            targets = ori_input[:, feature_dim + 1:].float().unsqueeze(-1)
+            
+            # target_class_predicted = torch.ones(predicted_tokens[-1].size(0), dtype=torch.long).to(self.env.device)
 
-            target_class_predicted = torch.ones(predicted_tokens[-1].size(0), dtype=torch.long).to(self.env.device)
+            # late_loss = F.cross_entropy(predicted_tokens[-1], target_class_predicted)
 
-            late_loss = F.cross_entropy(predicted_tokens[-1], target_class_predicted)
+            late_loss = self.model.compute_loss(targets, generated_mdn_params)
+            
+            # For reward stats per action, derive binary on_time from MDN last step
+            mus, sigmas, logpi = generated_mdn_params[-1]
+            selected_gauss = logpi.argmax(dim=-1)                       # [B]
+            idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))
+            on_time_pred = mus.gather(1, idx).squeeze(1)                # [B, D]
+            if on_time_pred.size(-1) == 1:
+                on_time_pred = on_time_pred.squeeze(-1)                 # [B]
+            on_time = on_time_pred.round().long() 
 
             mi_loss = self.env.args.mip_coeff * profit_loss + self.env.args.mil_coeff * late_loss
             
@@ -241,7 +260,17 @@ class CB_Session(object):
             action_profit_sum = torch.matmul(one_hot_action.T, selected_y.unsqueeze(1)).squeeze(1) 
             action_profit_count = one_hot_action.sum(dim=0) 
 
-            on_time = predicted_tokens[-1].argmax(dim=1) 
+            # Use MDN-derived on_time predictions (rounded from selected Gaussian mean)
+            if generated_mdn_params:
+                mus_last, sigmas_last, logpi_last = generated_mdn_params[-1]
+                sel_g = logpi_last.argmax(dim=-1)
+                gather_idx = sel_g.view(-1, 1, 1).expand(-1, 1, mus_last.size(-1))
+                on_time_pred = mus_last.gather(1, gather_idx).squeeze(1)
+                if on_time_pred.size(-1) == 1:
+                    on_time_pred = on_time_pred.squeeze(-1)
+                on_time = on_time_pred.round().long()
+            else:
+                on_time = torch.zeros(state.size(0), dtype=torch.long, device=self.env.device)
             action_on_time_sum = torch.matmul(one_hot_action.T, on_time.unsqueeze(1).float()).squeeze(1) 
             action_on_time_count = action_profit_count 
 
@@ -421,10 +450,27 @@ class CB_Session(object):
 
             selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
 
-            predicted_tokens = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
+            # Model returns generated_mdn_params
+            generated_mdn_params = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
+            
+            # Sample for on_time (last time step)
+            if generated_mdn_params:
+                mus, sigmas, logpi = generated_mdn_params[-1]  # mus: [B, K, D], logpi: [B, K]
+                selected_gauss = logpi.argmax(dim=-1)  # [B]
+                # gather along gaussian dim=1, then squeeze to [B] if D==1
+                idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))  # [B,1,D]
+                on_time_pred = mus.gather(1, idx).squeeze(1)  # [B, D]
+                if on_time_pred.size(-1) == 1:
+                    on_time_pred = on_time_pred.squeeze(-1)   # [B]
+                on_time_pred = on_time_pred.round().long()
+                time_sum += on_time_pred.sum().item()
+                time_count += len(on_time_pred)
+            
+            
+            # predicted_tokens = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
 
-            time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
-            time_count += len(predicted_tokens[-1])
+            # time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
+            # time_count += len(predicted_tokens[-1])
 
         profit = profit_sum / profit_count if profit_count > 0 else 0
         on_time_ratio = time_sum / time_count if time_count > 0 else 0
@@ -471,37 +517,41 @@ class CB_Session(object):
                 
                 input_chunk = input_id[i:i + chunk_size]
                 ori_chunk = ori_input[i:i + chunk_size]
-
                 
-                for j in range(label_dim):
-                    for value in ori_chunk[:, feature_dim + j + 1].cpu().numpy():
-                        if value not in ori_label_value_counts[j]:
-                            ori_label_value_counts[j][value] = 0
-                        ori_label_value_counts[j][value] += 1
+                generated_mdn_params = self.model(input_chunk[:, :feature_dim], ori_chunk[:, feature_dim].long(), ori_chunk[:, feature_dim + 1:])
+                predicted_values = []
+                for t, (mus, sigmas, logpi) in enumerate(generated_mdn_params):
+                    selected_gauss = logpi.argmax(dim=-1)  # [B]
+                    # gather along gaussian dim=1
+                    idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))  # [B,1,D]
+                    pred_t = mus.gather(1, idx).squeeze(1)  # [B, D]
+                    if pred_t.size(-1) == 1:
+                        pred_t = pred_t.squeeze(-1)         # [B]
+                    predicted_values.append(pred_t)
+                predicted_tokens = torch.stack(predicted_values, dim=1)  # [B, seq_len] if D==1 else [B, seq_len, D]
+                
+                # class_labels = ori_chunk[:, -label_dim:].long().to(self.env.device)
+                
+                # for j in range(label_dim):
+                #     for value in ori_chunk[:, feature_dim + j + 1].cpu().numpy():
+                #         if value not in ori_label_value_counts[j]:
+                #             ori_label_value_counts[j][value] = 0
+                #         ori_label_value_counts[j][value] += 1
                     
 
-                
-                predicted_tokens = self.model(input_chunk[:,:feature_dim], ori_chunk[:,feature_dim].long(), ori_chunk[:,feature_dim+1:])
-
-                
                 class_labels = ori_chunk[:, -label_dim:].long().to(self.env.device)
-
-                
-                
-                
-
-
-
-
-                
                 for j in range(label_dim):
-                    predicted = torch.argmax(predicted_tokens[j], dim=1)  
-                    correct_preds[j] += (predicted == class_labels[:, j]).sum().item()  
-                    total_samples[j] += len(class_labels[:, j])  
+                    # predicted_tokens: [B, seq_len] or [B, seq_len, D]
+                    if predicted_tokens.dim() == 3:
+                        pred_cont = predicted_tokens[:, j, 0]
+                    else:
+                        pred_cont = predicted_tokens[:, j]
+                    predicted = pred_cont.round().long()
+                    correct_preds[j] += (predicted == class_labels[:, j]).sum().item()
+                    total_samples[j] += class_labels.size(0)
                     for value in predicted.cpu().numpy():
-                        if value not in label_value_counts[j]:
-                            label_value_counts[j][value] = 0
-                        label_value_counts[j][value] += 1
+                        v = int(value)
+                        label_value_counts[j][v] = label_value_counts[j].get(v, 0) + 1
 
         
         accuracies = [correct_preds[j] / total_samples[j] for j in range(label_dim)]

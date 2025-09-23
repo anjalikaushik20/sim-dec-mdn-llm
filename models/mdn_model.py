@@ -4,15 +4,16 @@ import torch.nn.functional as F
 from torch.distributions.normal import Normal
 
 def gmm_loss(batch, mus, sigmas, logpi, reduce=True):
-    batch = batch.unsqueeze(-2)
-    normal_dist = Normal(mus, sigmas)
-    g_log_probs = normal_dist.log_prob(batch)
-    g_log_probs = logpi + torch.sum(g_log_probs, dim=-1)
-    max_log_probs = torch.max(g_log_probs, dim=-1, keepdim=True)[0]
+    # batch: [B, D] or [B, 1] -> make [B, 1, D] for broadcast with [B, K, D]
+    batch = batch.unsqueeze(-2)  # [B, 1, D]
+    normal_dist = Normal(mus, sigmas)  # mus/sigmas: [B, K, D]
+    g_log_probs = normal_dist.log_prob(batch)  # [B, K, D]
+    g_log_probs = logpi + torch.sum(g_log_probs, dim=-1)  # [B, K]
+    max_log_probs = torch.max(g_log_probs, dim=-1, keepdim=True)[0]  # [B, 1]
     g_log_probs = g_log_probs - max_log_probs
-    g_probs = torch.exp(g_log_probs)
-    probs = torch.sum(g_probs, dim=-1)
-    log_prob = max_log_probs.squeeze() + torch.log(probs)
+    g_probs = torch.exp(g_log_probs)  # [B, K]
+    probs = torch.sum(g_probs, dim=-1)  # [B]
+    log_prob = max_log_probs.squeeze(-1) + torch.log(probs)  # [B]
     if reduce:
         return -torch.mean(log_prob)
     return -log_prob
@@ -21,17 +22,26 @@ class MDNHead(nn.Module):
     def __init__(self, input_dim, output_dim, gaussians):
         super().__init__()
         self.input_dim = input_dim
-        self.gaussians = gaussians
-        self.output_dim = output_dim
+        self.gaussians = gaussians  # K
+        self.output_dim = output_dim  # D
         self.linear = nn.Linear(input_dim, (2 * output_dim + 1) * gaussians)
         
     def forward(self, x):
-        out = self.linear(x)
-        stride = self.gaussians * self.output_dim
-        mus = out[..., :stride].view(*out.shape[:-1], self.gaussians, self.output_dim)
-        sigmas = out[..., stride:2 * stride].view(*out.shape[:-1], self.gaussians, self.output_dim)
-        sigmas = torch.exp(sigmas)  # Ensure positive
-        logpi = F.log_softmax(out[..., 2 * stride:2 * stride + self.gaussians], dim=-1)
+        # x: [B, H]
+        out = self.linear(x)  # [B, (2D+1)K]
+        B = out.size(0)
+        K = self.gaussians
+        D = self.output_dim
+
+        pi_logits = out[:, :K]                    # [B, K]
+        params = out[:, K:]                       # [B, 2*D*K]
+        mus, log_sigmas = params.split(D * K, dim=1)  # each [B, D*K]
+
+        # Shape to [B, K, D]
+        mus = mus.view(B, D, K).transpose(1, 2)          # [B, K, D]
+        sigmas = F.softplus(log_sigmas).view(B, D, K).transpose(1, 2)  # [B, K, D]
+        logpi = F.log_softmax(pi_logits, dim=-1)         # [B, K]
+        
         return mus, sigmas, logpi
         
 

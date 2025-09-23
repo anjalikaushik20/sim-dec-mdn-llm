@@ -3,6 +3,7 @@ import random
 import torch
 import torch.nn as nn
 from tools import feature_list
+from models.mdn_model import MDNHead, gmm_loss
 
 class S_SimDec(nn.Module):
     def __init__(self, env):
@@ -39,15 +40,17 @@ class S_SimDec(nn.Module):
         self.decoder_lstm = nn.LSTM(input_size=self.env.args.embed_dim, hidden_size=self.env.args.embed_dim, 
                                     num_layers=self.env.args.decoder_num_layers, batch_first=True)
         
-        self.output_layer = nn.Linear(self.env.args.embed_dim, 2)
+        # self.output_layer = nn.Linear(self.env.args.embed_dim, 2)
 
 
-        self.output_layer = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(self.env.args.embed_dim, num_classes),  
-            )
-            for num_classes in self.env.feature_classes
-        ])
+        # self.output_layer = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Linear(self.env.args.embed_dim, num_classes),  
+        #     )
+        #     for num_classes in self.env.feature_classes
+        # ])
+        
+        self.mdn_head = MDNHead(input_dim=self.env.args.embed_dim, output_dim=1, gaussians=5)
 
         self.decision_maker = nn.Sequential(
                 nn.Linear(self.c_num, self.c_num),
@@ -104,7 +107,8 @@ class S_SimDec(nn.Module):
         batch_size = c_input.shape[0]
         SOS_token = torch.full((batch_size, 1), 1, dtype=torch.long).to(self.env.device)
 
-        generated_tokens = []
+        # generated_tokens = []
+        generated_mdn_params = []
         
         for t in range(tgt.size(-1)):  
             if t == 0:
@@ -114,16 +118,28 @@ class S_SimDec(nn.Module):
                 tgt_embed = decoder_output
             
             decoder_output, decoder_hidden = self.decoder_lstm(tgt_embed, decoder_hidden)
-            predicted_token = self.output_layer[t](decoder_output.squeeze(1))
+            # predicted_token = self.output_layer[t](decoder_output.squeeze(1))
+            mus, sigmas, logpi = self.mdn_head(decoder_output.squeeze(1))
+            generated_mdn_params.append((mus, sigmas, logpi))
             
             
-            generated_tokens.append(predicted_token)
+            # generated_tokens.append(predicted_token)
 
         
-        return generated_tokens
+        # return generated_tokens
+        return generated_mdn_params
         
       
     def decision_process(self, c_input):
         decision_output = self.decision_maker(c_input)
         return decision_output
-
+    
+        # Add compute_loss method for GMM loss
+    def compute_loss(self, targets, generated_mdn_params):
+        # targets: [batch_size, seq_len, output_dim]
+        # generated_mdn_params: list of (mus, sigmas, logpi) for each time step
+        total_loss = 0
+        for t, (mus, sigmas, logpi) in enumerate(generated_mdn_params):
+            tgt_t = targets[:, t, :]  # [batch_size, output_dim]
+            total_loss += gmm_loss(tgt_t, mus, sigmas, logpi)
+        return total_loss / len(generated_mdn_params)  # Average over sequence

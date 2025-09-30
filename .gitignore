@@ -6,3 +6,4 @@ models/mdrnn.py
 exp_report/
 models/*.pyc
 sessions/*.pyc
+logpi_results/*

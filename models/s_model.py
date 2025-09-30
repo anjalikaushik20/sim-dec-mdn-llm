@@ -52,6 +52,9 @@ class S_SimDec(nn.Module):
         
         self.mdn_head = MDNHead(input_dim=self.env.args.embed_dim, output_dim=1, gaussians=5)
 
+        self.debug_logpi = []          # list of tensors [B,K]
+        # self._debug_epoch_cache = []
+        
         self.decision_maker = nn.Sequential(
                 nn.Linear(self.c_num, self.c_num),
                 nn.ReLU(),
@@ -120,6 +123,10 @@ class S_SimDec(nn.Module):
             decoder_output, decoder_hidden = self.decoder_lstm(tgt_embed, decoder_hidden)
             # predicted_token = self.output_layer[t](decoder_output.squeeze(1))
             mus, sigmas, logpi = self.mdn_head(decoder_output.squeeze(1))
+            
+            if getattr(self.env.args, 'inspect_logpi', 0):
+                if len(self.debug_logpi) < getattr(self.env.args, 'max_logpi_batches', 5):
+                    self.debug_logpi.append(logpi.detach().cpu())
             generated_mdn_params.append((mus, sigmas, logpi))
             
             
@@ -143,3 +150,6 @@ class S_SimDec(nn.Module):
             tgt_t = targets[:, t, :]  # [batch_size, output_dim]
             total_loss += gmm_loss(tgt_t, mus, sigmas, logpi)
         return total_loss / len(generated_mdn_params)  # Average over sequence
+    
+    def reset_logpi_debug(self):
+        self.debug_logpi = []

@@ -52,6 +52,9 @@ class CB_Session(object):
 
         self.min_profit, self.max_profit = float('inf'), float('-inf')
         self.min_on_time, self.max_on_time = float('inf'), float('-inf')
+        
+        self.logpi_dir = os.path.join(self.env.BASE_PATH, 'logpi_results')
+        os.makedirs(self.logpi_dir, exist_ok=True)
 
     def init_value_network(self, value_network):
         self.value_network = value_network
@@ -105,6 +108,25 @@ class CB_Session(object):
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
             self.optimizer.step()
+            
+        if getattr(self.env.args, 'inspect_logpi', 0) and len(self.model.debug_logpi) > 0:
+            # stacked = torch.stack([t for t in self.model.debug_logpi], dim=0)   # [Batches, B, K]
+            # mean_logpi = stacked.mean(dim=(0,1))        # [K]
+            batches = [t.detach().cpu() for t in self.model.debug_logpi]
+            flat = torch.cat(batches, dim=0)            # [sum_B, K]
+            mean_logpi = flat.mean(dim=0)               # [K]
+            max_comp = mean_logpi.argmax().item()
+            info(f'LOGPI: mean per Gaussian {mean_logpi.numpy()} (argmax={max_comp})')
+            # optional wandb
+            if self.env.args.wandb:
+                import wandb
+                wandb.log({f'logpi/mean_g{i}': v for i, v in enumerate(mean_logpi.tolist())})
+            # save raw tensor
+            # torch.save(stacked, os.path.join(self.logpi_dir, f'logpi_epoch_{self.total_epoch}.pt'))
+            torch.save(batches, os.path.join(self.logpi_dir, f'logpi_epoch_{self.total_epoch}.pt'))
+            if hasattr(self.model, 'reset_logpi_debug'):
+                self.model.reset_logpi_debug()
+        
         return all_classification_loss.avg, time.time() - t
  
 

@@ -70,6 +70,9 @@ def parse_args():
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--save', type=int, default=0)
+    
+    parser.add_argument('--inspect_logpi', type=int, default=0)
+    parser.add_argument('--max_logpi_batches', type=int, default=5, help='store at most this many batches per epoch')
 
     return parser.parse_args()
 

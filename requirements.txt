@@ -6,3 +6,5 @@ pandas
 scikit-learn
 transformers
 faiss-gpu
+typing_extensions
+jinja2

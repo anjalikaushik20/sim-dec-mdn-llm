@@ -10,10 +10,10 @@
 #SBATCH -o output/sim_dec_mdn_llm.%j.out
 #SBATCH -e output/sim_dec_mdn_llm.%j.err
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=pkerhalk@asu.edu
-
-#SBATCH --export=NONE
+#SBATCH --mail-user=akaush39@asu.edu
 
 module load mamba/latest
-source activate simenv
-python3 main/cb_main.py --use_gpu 1 --dataset DataCo --epochs 300 --train_mode 1
+eval "$(conda shell.bash hook)"
+conda activate simenv
+
+python3 main/cb_main.py --use_gpu 1 --dataset DataCo --epochs 350 --train_mode 1

@@ -50,7 +50,7 @@ class S_SimDec(nn.Module):
         #     for num_classes in self.env.feature_classes
         # ])
         
-        self.mdn_head = MDNHead(input_dim=self.env.args.embed_dim, output_dim=1, gaussians=5)
+        self.mdn_head = MDNHead(input_dim=self.env.args.embed_dim, output_dim=1, gaussians=getattr(self.env.args, 'mdn_components', 5))
 
         self.debug_logpi = []          # list of tensors [B,K]
         # self._debug_epoch_cache = []

@@ -71,6 +71,10 @@ def parse_args():
     parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--save', type=int, default=0)
     
+    # ----------------------- MDN options
+    parser.add_argument('--mdn_components', type=int, default=5, help='Number of Gaussian components for MDN')
+    parser.add_argument('--mdn_temperature', type=float, default=1.0, help='Temperature for MDN mixture logits (1.0 = no scaling)')
+    
     parser.add_argument('--inspect_logpi', type=int, default=0)
     parser.add_argument('--max_logpi_batches', type=int, default=5, help='store at most this many batches per epoch')
 

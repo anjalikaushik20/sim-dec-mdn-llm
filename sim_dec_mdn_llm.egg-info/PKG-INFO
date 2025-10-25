@@ -1,0 +1,144 @@
+Metadata-Version: 2.4
+Name: sim-dec-mdn-llm
+Version: 0.1.0
+Summary: AI4Simulation: Simulator + decision-maker with MDN/Value network
+Author: Your Name
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.23
+Requires-Dist: pandas>=1.5
+Requires-Dist: openpyxl>=3.1
+Requires-Dist: torch>=2.0
+Requires-Dist: wandb>=0.16
+Requires-Dist: transformers>=4.30
+Requires-Dist: scikit-learn>=1.2
+
+# Sim to Decision: MDN - LLM
+
+Implementation of a Mixture Density Network-based LLM decision maker.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Arguments](#arguments)
+- [Modules](#modules)
+- [Citation](#citation)
+
+---
+
+## Overview
+
+This repository implements a simulation-to-decision pipeline using Mixture Density Networks (MDN) and Large Language Models (LLM) for decision making. The code is modular, supporting multiple datasets and experiment configurations.
+
+## Project Structure
+
+```
+sim-dec-mdn-llm/
+├── README.md
+├── requirements.txt
+├── environments/
+│   └── environment.py
+├── evaluations/
+│   └── metric.py
+├── loaders/
+│   └── s_loader.py
+├── main/
+│   └── cb_main.py
+├── models/
+│   ├── s_model.py
+│   └── v_model.py
+├── sessions/
+│   └── cb_session.py
+└── tools/
+    ├── feature_list.py
+    ├── logger.py
+    └── utils.py
+```
+
+## Installation
+
+1. **Clone the repository:**
+   ```sh
+   git clone <repo-url>
+   cd sim-dec-mdn-llm
+   ```
+
+2. **Create a virtual environment (optional but recommended):**
+   ```sh
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install required libraries:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+   If `requirements.txt` is missing or incomplete, ensure you have the following main dependencies:
+   - torch
+   - numpy
+   - pandas
+   - scikit-learn
+   - tqdm
+   - wandb
+   - transformers
+   - faiss
+
+   Install them with:
+   ```sh
+   pip install torch numpy pandas scikit-learn tqdm wandb transformers faiss-cpu
+   ```
+
+## Usage
+
+The main entry point for running experiments is [`main/cb_main.py`](main/cb_main.py):
+
+```sh
+python main/cb_main.py --dataset OAS --epochs 10000 --batch_size 5096
+```
+
+You can specify various arguments to control the experiment (see below).
+
+### Example
+
+```sh
+python main/cb_main.py --dataset DataCo --epochs 5000 --use_gpu 1 --wandb 1
+```
+
+## Arguments
+
+Key arguments (see [`main/cb_main.py`](main/cb_main.py) for full list):
+
+- `--dataset`: Dataset to use (`LSCRW`, `DataCo`, `GlobalStore`, `OAS`, `DataCo_OOD`)
+- `--epochs`: Number of training epochs
+- `--batch_size`: Batch size for training
+- `--use_gpu`: Use GPU (1) or CPU (0)
+- `--device_id`: GPU device ID
+- `--wandb`: Enable Weights & Biases logging (1) or not (0)
+- `--ckpt`: Path to model checkpoint to resume from
+- `--train_mode`: 0 = train both simulator and decision-maker, 1 = simulator only, 2 = decision-maker only
+
+For a full list, run:
+```sh
+python main/cb_main.py --help
+```
+
+## Modules
+
+- [`environments/environment.py`](environments/environment.py): Environment setup and management.
+- [`loaders/s_loader.py`](loaders/s_loader.py): Data loading and preprocessing.
+- [`models/s_model.py`](models/s_model.py), [`models/v_model.py`](models/v_model.py): Model definitions.
+- [`sessions/cb_session.py`](sessions/cb_session.py): Training and evaluation session logic.
+- [`tools/feature_list.py`](tools/feature_list.py): Feature definitions for datasets.
+- [`tools/logger.py`](tools/logger.py): Logging utilities.
+
+<!-- ## Citation
+
+If you use this codebase, please cite appropriately.
+
+---
+
+For questions or issues, please open an issue in this -->

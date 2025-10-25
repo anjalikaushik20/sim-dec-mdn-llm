@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sim-dec-mdn-llm"
+version = "0.1.0"
+description = "AI4Simulation: Simulator + decision-maker with MDN/Value network"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Your Name" }]
+
+dependencies = [
+  "numpy>=1.23",
+  "pandas>=1.5",
+  "openpyxl>=3.1",
+  "torch>=2.0",
+  "wandb>=0.16",
+  "transformers>=4.30",
+  "scikit-learn>=1.2",
+]
+
+[tool.setuptools]
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["environments*", "evaluations*", "loaders*", "main*", "models*", "sessions*", "tools*"]
+namespaces = true
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
+ignore = ["E203"]

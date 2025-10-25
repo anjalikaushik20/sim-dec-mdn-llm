@@ -7,3 +7,4 @@ exp_report/
 models/*.pyc
 sessions/*.pyc
 logpi_results/*
+output_old/*

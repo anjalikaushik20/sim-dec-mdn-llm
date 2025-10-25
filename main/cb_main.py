@@ -29,6 +29,9 @@ def parse_args():
 
     parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD'])
     parser.add_argument('--lr', type=float, default=0.01)
+    # Separate learning rates for LSTM/base and MDN head
+    parser.add_argument('--lr_lstm', type=float, default=1e-4)
+    parser.add_argument('--lr_mdn', type=float, default=5e-5)
 
     # parser.add_argument('--mi_lr', type=float, default=0.0001)
     parser.add_argument('--dm_lr', type=float, default=0.01)
@@ -74,6 +77,13 @@ def parse_args():
     # ----------------------- MDN options
     parser.add_argument('--mdn_components', type=int, default=5, help='Number of Gaussian components for MDN')
     parser.add_argument('--mdn_temperature', type=float, default=1.0, help='Temperature for MDN mixture logits (1.0 = no scaling)')
+    parser.add_argument('--mdn_entropy_coeff', type=float, default=1e-3, help='Entropy regularization coefficient on mixture weights to avoid collapse')
+    parser.add_argument('--mdn_eval_stochastic', type=int, default=0, help='If 1, sample from mixture at eval; else use expectation of mixture')
+    parser.add_argument('--mdn_mse_coeff', type=float, default=1e-2, help='Weight for MSE between expected mixture mean and target to align downstream metrics')
+    parser.add_argument('--mdn_smooth_coeff', type=float, default=1e-3, help='Temporal smoothness prior on mixture means between consecutive steps')
+    parser.add_argument('--mdn_feedback_alpha', type=float, default=0.8, help='Blend factor for feeding sampled MDN output vs decoder output as next input')
+    parser.add_argument('--mdn_temp_init', type=float, default=1.5, help='Initial temperature for MDN annealing schedule')
+    parser.add_argument('--mdn_temp_final', type=float, default=1.0, help='Final temperature for MDN annealing schedule')
     
     parser.add_argument('--inspect_logpi', type=int, default=0)
     parser.add_argument('--max_logpi_batches', type=int, default=5, help='store at most this many batches per epoch')

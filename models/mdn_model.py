@@ -19,28 +19,40 @@ def gmm_loss(batch, mus, sigmas, logpi, reduce=True):
     return -log_prob
 
 class MDNHead(nn.Module):
-    def __init__(self, input_dim, output_dim, gaussians):
+    def __init__(self, input_dim, output_dim, gaussians, temperature: float = 1.0, sigma_floor: float = 1e-3):
         super().__init__()
         self.input_dim = input_dim
         self.gaussians = gaussians  # K
         self.output_dim = output_dim  # D
-        self.linear = nn.Linear(input_dim, (2 * output_dim + 1) * gaussians)
+        self.temperature = float(temperature)
+        self.sigma_floor = float(sigma_floor)
+
+        # Separate heads for stability and clearer initialization
+        self.pi_layer = nn.Linear(input_dim, gaussians)
+        self.mu_layer = nn.Linear(input_dim, output_dim * gaussians)
+        self.sigma_layer = nn.Linear(input_dim, output_dim * gaussians)
+
+        # Smarter initialization to avoid early exploding sigma and extreme logits
+        for m in [self.pi_layer, self.mu_layer, self.sigma_layer]:
+            nn.init.xavier_uniform_(m.weight, gain=0.01)
+            nn.init.constant_(m.bias, 0.0)
         
     def forward(self, x):
         # x: [B, H]
-        out = self.linear(x)  # [B, (2D+1)K]
-        B = out.size(0)
+        B = x.size(0)
         K = self.gaussians
         D = self.output_dim
 
-        pi_logits = out[:, :K]                    # [B, K]
-        params = out[:, K:]                       # [B, 2*D*K]
-        mus, log_sigmas = params.split(D * K, dim=1)  # each [B, D*K]
+        pi_logits = self.pi_layer(x)                                  # [B, K]
+        mus_flat = self.mu_layer(x)                                    # [B, D*K]
+        sigmas_flat = self.sigma_layer(x)                              # [B, D*K]
 
         # Shape to [B, K, D]
-        mus = mus.view(B, D, K).transpose(1, 2)          # [B, K, D]
-        sigmas = F.softplus(log_sigmas).view(B, D, K).transpose(1, 2)  # [B, K, D]
-        logpi = F.log_softmax(pi_logits, dim=-1)         # [B, K]
+        mus = mus_flat.view(B, D, K).transpose(1, 2)                   # [B, K, D]
+        # Stabilize std with softplus and a small floor to avoid tiny variances
+        sigmas = F.softplus(sigmas_flat).view(B, D, K).transpose(1, 2) + self.sigma_floor  # [B, K, D]
+        # Temperature-scaled mixture weights for stability
+        logpi = F.log_softmax(pi_logits / self.temperature, dim=-1)   # [B, K]
         
         return mus, sigmas, logpi
         

@@ -16,4 +16,6 @@ module load mamba/latest
 eval "$(conda shell.bash hook)"
 conda activate simenv
 
-python3 main/cb_main.py --use_gpu 1 --dataset DataCo --epochs 350 --train_mode 1
+wandb login ad8cbad10b421ebaaca5e60024696545d4781023 --relogin
+
+python3 main/cb_main.py --use_gpu 1 --dataset DataCo --epochs 350 --train_mode 1 --mdn_components 1 --mdn_mse_coeff 0.5 --mdn_entropy_coeff 0 --mdn_feedback_alpha 0.0 --wandb 1

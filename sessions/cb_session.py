@@ -26,8 +26,28 @@ class CB_Session(object):
         self.train_inputs = dataset.train_inputs
         self.val_inputs = dataset.val_inputs
         self.test_inputs = dataset.test_inputs
+        # Cache feature dimension and fit scaler ONCE on train features only
+        self.feature_dim = len(
+            feature_list.product_info[self.env.args.dataset]
+            + feature_list.order_info[self.env.args.dataset]
+            + feature_list.customer_info[self.env.args.dataset]
+            + feature_list.shipping_info[self.env.args.dataset]
+        )
+        # Use separate learning rates for MDN head (smaller) vs the rest of the model
+        mdn_params = list(self.model.mdn_head.parameters()) if hasattr(self.model, 'mdn_head') else []
+        mdn_param_ids = {id(p) for p in mdn_params}
+        base_params = [p for p in self.model.parameters() if p.requires_grad and id(p) not in mdn_param_ids]
+
+        lstm_lr = getattr(self.env.args, 'lr_lstm', 1e-4)
+        mdn_lr = getattr(self.env.args, 'lr_mdn', 5e-5)
+
         self.optimizer = torch.optim.Adam(
-            [{'params': filter(lambda p: p.requires_grad, self.model.parameters()), 'lr': self.env.args.lr}], weight_decay=self.env.args.decay_coeff)
+            [
+                {'params': base_params, 'lr': lstm_lr},
+                {'params': mdn_params, 'lr': mdn_lr},
+            ],
+            weight_decay=self.env.args.decay_coeff,
+        )
         
 
         self.action_dim = 4
@@ -43,7 +63,13 @@ class CB_Session(object):
         self.cost_dic = dataset.cost_mrp
         self.avg_profit = dataset.avg_profit
         self.test_rec_loss = 99999
+        # Standardize only feature columns; keep decision/labels untouched
         self.scaler = StandardScaler()
+        try:
+            self.scaler.fit(self.train_inputs[:, :self.feature_dim].cpu().numpy())
+        except Exception:
+            # In case tensors are already numpy arrays
+            self.scaler.fit(np.asarray(self.train_inputs[:, :self.feature_dim].cpu()))
         self.best_p = 0
         self.best_o = 0
         self.best_pmp1 = 0
@@ -73,21 +99,20 @@ class CB_Session(object):
 
         all_rec_loss = AverageMeter()
         all_kl_loss = AverageMeter()
-        all_classification_loss = AverageMeter()
+        # Track actual MDN loss
+        all_mdn_loss = AverageMeter()
 
-        
-
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
-
-        label_dim =  len(feature_list.label[self.env.args.dataset])
+            
+        feature_dim = self.feature_dim
+        label_dim = len(feature_list.label[self.env.args.dataset])
 
         for input_id in tqdm(self.loader):
             
-            
             ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
-            input_id = torch.FloatTensor(input_id).to(self.env.device)
+            # Transform FEATURES only; do NOT refit per batch and do not touch decision/labels
+            features = self.scaler.transform(input_id[:, :self.feature_dim].cpu().numpy())
+            features = torch.from_numpy(features).to(self.env.device, dtype=ori_input.dtype)
+            input_id = torch.cat([features, ori_input[:, self.feature_dim:]], dim=1)
             
             generated_mdn_params = self.model(input_id[:, :feature_dim], ori_input[:, feature_dim].long(), ori_input[:, feature_dim + 1:].long())
             
@@ -106,8 +131,9 @@ class CB_Session(object):
             
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
+            all_mdn_loss.update(loss.item(), len(input_id))
             
         if getattr(self.env.args, 'inspect_logpi', 0) and len(self.model.debug_logpi) > 0:
             # stacked = torch.stack([t for t in self.model.debug_logpi], dim=0)   # [Batches, B, K]
@@ -127,19 +153,29 @@ class CB_Session(object):
             if hasattr(self.model, 'reset_logpi_debug'):
                 self.model.reset_logpi_debug()
         
-        return all_classification_loss.avg, time.time() - t
+        return all_mdn_loss.avg, time.time() - t
  
 
 
     def train(self):
         self.early_stop = 0
         for epoch in range(self.env.args.ckpt_start_epoch, self.env.args.epochs):
-            classification_loss, train_time = self.train_epoch()
+            # Temperature annealing for MDN mixture weights
+            init_temp = float(getattr(self.env.args, 'mdn_temp_init', getattr(self.env.args, 'mdn_temperature', 1.0)))
+            final_temp = float(getattr(self.env.args, 'mdn_temp_final', getattr(self.env.args, 'mdn_temperature', 1.0)))
+            total_epochs = max(1, int(self.env.args.epochs) - int(self.env.args.ckpt_start_epoch))
+            progress = (epoch - int(self.env.args.ckpt_start_epoch)) / max(1, total_epochs - 1)
+            annealed_temp = init_temp - progress * (init_temp - final_temp)
+            if hasattr(self.model, 'mdn_head'):
+                self.model.mdn_head.temperature = float(annealed_temp)
+            if self.env.args.wandb:
+                wandb.log({"mdn/temperature": annealed_temp}, epoch)
+            mdn_loss, train_time = self.train_epoch()
             info('-' * 50)
             info(
-                f'TRAIN:epoch = {epoch}/{self.env.args.epochs} classification_loss = {classification_loss:.5f} train_time = {train_time:.2f}')
+                f'TRAIN:epoch = {epoch}/{self.env.args.epochs} temp = {annealed_temp:.3f} mdn_loss = {mdn_loss:.5f} train_time = {train_time:.2f}')
             if self.env.args.wandb:
-                wandb.log({"loss/classification_loss":classification_loss}, epoch)
+                wandb.log({"loss/mdn_loss": mdn_loss}, epoch)
             self.test('val')
             if epoch % self.env.args.eva_interval == 0:
                 self.early_stop += 1
@@ -188,8 +224,7 @@ class CB_Session(object):
         all_late_loss = AverageMeter()
         all_loss = AverageMeter()
 
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
+        feature_dim = self.feature_dim
 
         self.cost_dic_data = self.cost_dic[:, :-1] 
         self.cost_dic_y = self.cost_dic[:, -1] 
@@ -203,8 +238,10 @@ class CB_Session(object):
         for input_id in tqdm(self.loader):
 
             ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
-            input_id = torch.FloatTensor(input_id).to(self.env.device)
+            # Transform FEATURES only
+            features = self.scaler.transform(input_id[:, :self.feature_dim].cpu().numpy())
+            features = torch.from_numpy(features).to(self.env.device, dtype=ori_input.dtype)
+            input_id = torch.cat([features, ori_input[:, self.feature_dim:]], dim=1)
             state = input_id[:, :feature_dim]
 
 
@@ -234,14 +271,13 @@ class CB_Session(object):
 
             late_loss = self.model.compute_loss(targets, generated_mdn_params)
             
-            # For reward stats per action, derive binary on_time from MDN last step
-            mus, sigmas, logpi = generated_mdn_params[-1]
-            selected_gauss = logpi.argmax(dim=-1)                       # [B]
-            idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))
-            on_time_pred = mus.gather(1, idx).squeeze(1)                # [B, D]
-            if on_time_pred.size(-1) == 1:
-                on_time_pred = on_time_pred.squeeze(-1)                 # [B]
-            on_time = on_time_pred.round().long() 
+            # For reward stats per action, use expected value over mixture for on_time (last step)
+            mus, sigmas, logpi = generated_mdn_params[-1]               # mus: [B,K,D], logpi: [B,K]
+            pi = logpi.exp()                                            # [B,K]
+            exp_mu = (pi.unsqueeze(-1) * mus).sum(dim=1)                # [B,D]
+            if exp_mu.size(-1) == 1:
+                exp_mu = exp_mu.squeeze(-1)                             # [B]
+            on_time = exp_mu.round().long()
 
             mi_loss = self.env.args.mip_coeff * profit_loss + self.env.args.mil_coeff * late_loss
             
@@ -282,15 +318,14 @@ class CB_Session(object):
             action_profit_sum = torch.matmul(one_hot_action.T, selected_y.unsqueeze(1)).squeeze(1) 
             action_profit_count = one_hot_action.sum(dim=0) 
 
-            # Use MDN-derived on_time predictions (rounded from selected Gaussian mean)
+            # Use MDN-derived on_time predictions via expected mixture mean
             if generated_mdn_params:
                 mus_last, sigmas_last, logpi_last = generated_mdn_params[-1]
-                sel_g = logpi_last.argmax(dim=-1)
-                gather_idx = sel_g.view(-1, 1, 1).expand(-1, 1, mus_last.size(-1))
-                on_time_pred = mus_last.gather(1, gather_idx).squeeze(1)
-                if on_time_pred.size(-1) == 1:
-                    on_time_pred = on_time_pred.squeeze(-1)
-                on_time = on_time_pred.round().long()
+                pi_last = logpi_last.exp()                               # [B,K]
+                exp_mu_last = (pi_last.unsqueeze(-1) * mus_last).sum(dim=1)  # [B,D]
+                if exp_mu_last.size(-1) == 1:
+                    exp_mu_last = exp_mu_last.squeeze(-1)
+                on_time = exp_mu_last.round().long()
             else:
                 on_time = torch.zeros(state.size(0), dtype=torch.long, device=self.env.device)
             action_on_time_sum = torch.matmul(one_hot_action.T, on_time.unsqueeze(1).float()).squeeze(1) 
@@ -408,11 +443,14 @@ class CB_Session(object):
         ori_input = input_id.to(self.env.device)
 
         if mode != 'ori':
-            input_id = self.scaler.transform(input_id)
+            # Transform FEATURES only
+            features = self.scaler.transform(input_id[:, :self.feature_dim].cpu().numpy())
+            features = torch.from_numpy(features).to(self.env.device, dtype=ori_input.dtype)
+            input_id = torch.cat([features, ori_input[:, self.feature_dim:]], dim=1)
+        else:
+            input_id = ori_input
 
-        input_id = torch.FloatTensor(input_id).to(self.env.device)
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                        feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset])
+        feature_dim = self.feature_dim
 
         self.cost_dic_data = self.cost_dic[:, :-1]  
         self.cost_dic_y = self.cost_dic[:, -1] 
@@ -475,18 +513,29 @@ class CB_Session(object):
             # Model returns generated_mdn_params
             generated_mdn_params = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
             
-            # Sample for on_time (last time step)
+            # Deterministic on_time via expected mixture mean (optionally stochastic)
             if generated_mdn_params:
                 mus, sigmas, logpi = generated_mdn_params[-1]  # mus: [B, K, D], logpi: [B, K]
-                selected_gauss = logpi.argmax(dim=-1)  # [B]
-                # gather along gaussian dim=1, then squeeze to [B] if D==1
-                idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))  # [B,1,D]
-                on_time_pred = mus.gather(1, idx).squeeze(1)  # [B, D]
-                if on_time_pred.size(-1) == 1:
-                    on_time_pred = on_time_pred.squeeze(-1)   # [B]
-                on_time_pred = on_time_pred.round().long()
-                time_sum += on_time_pred.sum().item()
-                time_count += len(on_time_pred)
+                pi = logpi.exp()
+                if int(getattr(self.env.args, 'mdn_eval_stochastic', 0)) == 1:
+                    # sample component per example, then draw from Gaussian
+                    comp = torch.distributions.Categorical(pi).sample()  # [B]
+                    idx = comp.view(-1, 1, 1).expand(-1, 1, mus.size(-1))
+                    mu_sel = mus.gather(1, idx).squeeze(1)      # [B, D]
+                    sigma_sel = sigmas.gather(1, idx).squeeze(1)  # [B, D]
+                    sample = torch.randn_like(mu_sel) * sigma_sel + mu_sel   # [B, D]
+                    if sample.size(-1) == 1:
+                        sample = sample.squeeze(-1)             # [B]
+                    on_time_pred = sample
+                else:
+                    # expected value over mixture
+                    exp_mu = (pi.unsqueeze(-1) * mus).sum(dim=1)  # [B, D]
+                    if exp_mu.size(-1) == 1:
+                        exp_mu = exp_mu.squeeze(-1)               # [B]
+                    on_time_pred = exp_mu
+                on_time_rounded = on_time_pred.round().long()
+                time_sum += on_time_rounded.sum().item()
+                time_count += len(on_time_rounded)
             
             
             # predicted_tokens = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
@@ -518,12 +567,13 @@ class CB_Session(object):
         total_samples = 0
 
         ori_input = input_id.to(self.env.device)
-        input_id = self.scaler.transform(input_id)
-        input_id = torch.FloatTensor(input_id).to(self.env.device)
+        # Transform FEATURES only for eval
+        features = self.scaler.transform(input_id[:, :self.feature_dim].cpu().numpy())
+        features = torch.from_numpy(features).to(self.env.device, dtype=ori_input.dtype)
+        input_id = torch.cat([features, ori_input[:, self.feature_dim:]], dim=1)
 
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
-        label_dim =  len(feature_list.label[self.env.args.dataset])
+        feature_dim = self.feature_dim
+        label_dim = len(feature_list.label[self.env.args.dataset])
 
         ori_label_value_counts = {j: {} for j in range(label_dim)}
 
@@ -543,10 +593,15 @@ class CB_Session(object):
                 generated_mdn_params = self.model(input_chunk[:, :feature_dim], ori_chunk[:, feature_dim].long(), ori_chunk[:, feature_dim + 1:])
                 predicted_values = []
                 for t, (mus, sigmas, logpi) in enumerate(generated_mdn_params):
-                    selected_gauss = logpi.argmax(dim=-1)  # [B]
-                    # gather along gaussian dim=1
-                    idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))  # [B,1,D]
-                    pred_t = mus.gather(1, idx).squeeze(1)  # [B, D]
+                    pi = logpi.exp()  # [B, K]
+                    if int(getattr(self.env.args, 'mdn_eval_stochastic', 0)) == 1:
+                        comp = torch.distributions.Categorical(pi).sample()  # [B]
+                        idx = comp.view(-1, 1, 1).expand(-1, 1, mus.size(-1))
+                        mu_sel = mus.gather(1, idx).squeeze(1)      # [B, D]
+                        sigma_sel = sigmas.gather(1, idx).squeeze(1)  # [B, D]
+                        pred_t = torch.randn_like(mu_sel) * sigma_sel + mu_sel
+                    else:
+                        pred_t = (pi.unsqueeze(-1) * mus).sum(dim=1)  # [B, D]
                     if pred_t.size(-1) == 1:
                         pred_t = pred_t.squeeze(-1)         # [B]
                     predicted_values.append(pred_t)

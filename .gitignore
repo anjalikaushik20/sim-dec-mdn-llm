@@ -2,3 +2,5 @@ datasets/
 wandb/
 __pycache__/
 *.pyc
+output/*
+exp_report/*

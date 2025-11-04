@@ -55,13 +55,16 @@ class CB_Session(object):
 
     def init_value_network(self, value_network):
         self.value_network = value_network
-        self.optimizer_dm = torch.optim.Adam(
-            [
-                
-                {'params': self.value_network.parameters(), 'lr': self.env.args.dm_lr}
-            ]
-            , weight_decay=self.env.args.dm_decay_coeff
-        ) if len(params) > 0 else None
+        params = list(self.value_network.parameters())
+
+        if len(params) > 0:
+            self.optimizer_dm = torch.optim.Adam(
+                [{'params': params, 'lr': self.env.args.dm_lr}],
+                weight_decay=self.env.args.dm_decay_coeff
+            )
+        else:
+            self.optimizer_dm = None
+
 
     def train_epoch(self):
         t = time.time()

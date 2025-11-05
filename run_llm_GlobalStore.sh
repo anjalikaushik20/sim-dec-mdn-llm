@@ -18,4 +18,4 @@ conda activate simenv
 
 wandb login $WB_LOGIN --relogin
 
-python3 main/cb_main_llm.py --use_gpu 1 --dataset GlobalStore --epochs 200 --train_mode 0 --wandb 1
+python3 main/cb_main_llm.py --use_gpu 1 --dataset GlobalStore --epochs 6000 --train_mode 0 --wandb 1

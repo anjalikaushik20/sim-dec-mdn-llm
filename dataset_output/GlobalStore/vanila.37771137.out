@@ -1,0 +1,1713 @@
+INFO:  --------------------------------Een Init----------------------------------
+INFO:  Code will run in cuda:0
+INFO:  --------------------------------Dataset Init------------------------------
+INFO:  --------------------------------Model Init--------------------------------
+INFO:  --------------------------------Session Init------------------------------
+INFO:  ------------------------------------ Main --------------------------------
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 0/200 classification_loss = 0.00000 train_time = 0.48
+INFO:  ----------
+INFO:  late_risk Accuracy: 64.57% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 43.28% val_time = 0.01
+INFO:  on_time Accuracy: 53.38% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 53.75% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 1/200 classification_loss = 0.00000 train_time = 0.17
+INFO:  ----------
+INFO:  late_risk Accuracy: 70.54% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 45.64% val_time = 0.01
+INFO:  on_time Accuracy: 71.71% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 62.63% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 2/200 classification_loss = 0.00000 train_time = 0.17
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.53% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 43.63% val_time = 0.01
+INFO:  on_time Accuracy: 71.98% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 62.72% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 3/200 classification_loss = 0.00000 train_time = 0.17
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.45% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 45.72% val_time = 0.01
+INFO:  on_time Accuracy: 71.71% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 63.29% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 4/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 71.75% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 46.17% val_time = 0.01
+INFO:  on_time Accuracy: 72.51% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 63.48% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 5/200 classification_loss = 0.00000 train_time = 0.27
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.55% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.92% val_time = 0.01
+INFO:  on_time Accuracy: 72.41% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 64.29% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 6/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.20% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 46.99% val_time = 0.01
+INFO:  on_time Accuracy: 71.69% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 7/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.59% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 48.16% val_time = 0.01
+INFO:  on_time Accuracy: 72.51% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 64.42% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 8/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 73.62% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 48.31% val_time = 0.01
+INFO:  on_time Accuracy: 73.64% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 65.19% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 9/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 75.67% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 48.18% val_time = 0.01
+INFO:  on_time Accuracy: 74.07% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 65.97% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 10/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.67% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 53.71% val_time = 0.01
+INFO:  on_time Accuracy: 74.13% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 67.51% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 11/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.14% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 57.61% val_time = 0.01
+INFO:  on_time Accuracy: 78.92% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 71.89% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 12/200 classification_loss = 0.00000 train_time = 0.27
+INFO:  ----------
+INFO:  late_risk Accuracy: 76.16% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 54.42% val_time = 0.01
+INFO:  on_time Accuracy: 77.09% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 13/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.07% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 59.29% val_time = 0.01
+INFO:  on_time Accuracy: 79.66% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 73.01% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 14/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.68% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 57.63% val_time = 0.01
+INFO:  on_time Accuracy: 78.26% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 15/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.11% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.97% val_time = 0.01
+INFO:  on_time Accuracy: 80.80% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 73.96% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 16/200 classification_loss = 0.00000 train_time = 0.16
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.14% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.62% val_time = 0.01
+INFO:  on_time Accuracy: 82.02% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 74.93% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 17/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.62% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.15% val_time = 0.01
+INFO:  on_time Accuracy: 80.85% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 18/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.38% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.15% val_time = 0.01
+INFO:  on_time Accuracy: 84.27% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 77.60% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 19/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.68% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.37% val_time = 0.01
+INFO:  on_time Accuracy: 83.99% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 78.01% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 20/200 classification_loss = 0.00000 train_time = 0.28
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.80% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.77% val_time = 0.01
+INFO:  on_time Accuracy: 83.02% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 21/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.88% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.12% val_time = 0.01
+INFO:  on_time Accuracy: 81.79% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 22/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.68% val_time = 0.02
+INFO:  day_for_shipping Accuracy: 61.36% val_time = 0.02
+INFO:  on_time Accuracy: 80.99% val_time = 0.02
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 23/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.70% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.13% val_time = 0.01
+INFO:  on_time Accuracy: 80.81% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 24/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.20% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 63.60% val_time = 0.01
+INFO:  on_time Accuracy: 82.53% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 25/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.61% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 61.65% val_time = 0.01
+INFO:  on_time Accuracy: 82.26% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 26/200 classification_loss = 0.00000 train_time = 0.16
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.05% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.40% val_time = 0.01
+INFO:  on_time Accuracy: 79.31% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 27/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 77.46% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 54.03% val_time = 0.01
+INFO:  on_time Accuracy: 77.48% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 28/200 classification_loss = 0.00000 train_time = 0.27
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.82% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 57.01% val_time = 0.01
+INFO:  on_time Accuracy: 80.05% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 29/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.12% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.87% val_time = 0.01
+INFO:  on_time Accuracy: 85.08% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 78.36% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 30/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.44% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.80% val_time = 0.01
+INFO:  on_time Accuracy: 85.42% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 80.22% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 31/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.04% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.96% val_time = 0.01
+INFO:  on_time Accuracy: 85.46% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 80.48% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 32/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.59% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.27% val_time = 0.01
+INFO:  on_time Accuracy: 85.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 33/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.63% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.41% val_time = 0.01
+INFO:  on_time Accuracy: 85.92% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 80.65% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 34/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.48% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.77% val_time = 0.01
+INFO:  on_time Accuracy: 81.24% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 35/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 68.53% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 49.54% val_time = 0.01
+INFO:  on_time Accuracy: 69.74% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 36/200 classification_loss = 0.00000 train_time = 0.28
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.74% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 70.31% val_time = 0.01
+INFO:  on_time Accuracy: 86.82% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 81.29% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 37/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.39% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 72.12% val_time = 0.01
+INFO:  on_time Accuracy: 87.89% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 82.47% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 38/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.32% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.53% val_time = 0.01
+INFO:  on_time Accuracy: 82.78% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 39/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.27% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 70.70% val_time = 0.01
+INFO:  on_time Accuracy: 86.00% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 40/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 71.94% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 49.21% val_time = 0.01
+INFO:  on_time Accuracy: 72.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 41/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.51% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.31% val_time = 0.01
+INFO:  on_time Accuracy: 86.53% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 42/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.70% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 67.81% val_time = 0.01
+INFO:  on_time Accuracy: 84.42% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 43/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.35% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 70.95% val_time = 0.01
+INFO:  on_time Accuracy: 87.46% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 44/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.51% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.50% val_time = 0.01
+INFO:  on_time Accuracy: 82.34% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 45/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.89% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.54% val_time = 0.01
+INFO:  on_time Accuracy: 88.24% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 83.23% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 46/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.94% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 70.11% val_time = 0.01
+INFO:  on_time Accuracy: 85.81% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 47/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.99% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 68.02% val_time = 0.01
+INFO:  on_time Accuracy: 85.61% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 48/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.45% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 63.21% val_time = 0.01
+INFO:  on_time Accuracy: 81.01% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 49/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.18% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 72.76% val_time = 0.01
+INFO:  on_time Accuracy: 88.40% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 50/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.14% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.28% val_time = 0.01
+INFO:  on_time Accuracy: 83.58% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 51/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 81.01% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 58.53% val_time = 0.01
+INFO:  on_time Accuracy: 81.19% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 52/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 81.79% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.03% val_time = 0.01
+INFO:  on_time Accuracy: 81.91% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 53/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.95% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.51% val_time = 0.01
+INFO:  on_time Accuracy: 85.38% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 54/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.82% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.98% val_time = 0.01
+INFO:  on_time Accuracy: 83.99% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 55/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.68% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.27% val_time = 0.01
+INFO:  on_time Accuracy: 79.12% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 56/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.02% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 63.42% val_time = 0.01
+INFO:  on_time Accuracy: 81.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 57/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 77.75% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 57.07% val_time = 0.01
+INFO:  on_time Accuracy: 78.48% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 58/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 68.67% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 34.92% val_time = 0.01
+INFO:  on_time Accuracy: 68.51% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 59/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.84% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 57.18% val_time = 0.01
+INFO:  on_time Accuracy: 79.45% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 60/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 70.13% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 43.75% val_time = 0.01
+INFO:  on_time Accuracy: 68.47% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 61/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 81.75% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.52% val_time = 0.01
+INFO:  on_time Accuracy: 80.83% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 62/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.47% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 75.82% val_time = 0.01
+INFO:  on_time Accuracy: 89.57% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 84.95% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 63/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.98% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 75.71% val_time = 0.01
+INFO:  on_time Accuracy: 89.14% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 64/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.09% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.94% val_time = 0.01
+INFO:  on_time Accuracy: 83.95% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 65/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.24% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 64.92% val_time = 0.01
+INFO:  on_time Accuracy: 81.15% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 66/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.74% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 71.83% val_time = 0.01
+INFO:  on_time Accuracy: 87.42% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 67/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.58% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 72.49% val_time = 0.01
+INFO:  on_time Accuracy: 87.52% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 68/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.36% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 75.47% val_time = 0.01
+INFO:  on_time Accuracy: 88.11% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 69/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 78.05% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 55.96% val_time = 0.01
+INFO:  on_time Accuracy: 78.63% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 70/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.64% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 79.29% val_time = 0.01
+INFO:  on_time Accuracy: 90.25% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 86.73% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 71/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.56% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 50.50% val_time = 0.01
+INFO:  on_time Accuracy: 74.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 72/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.89% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 78.94% val_time = 0.01
+INFO:  on_time Accuracy: 91.25% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 87.03% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 73/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.31% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.03% val_time = 0.01
+INFO:  on_time Accuracy: 71.92% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 74/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.04% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 55.27% val_time = 0.01
+INFO:  on_time Accuracy: 78.83% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 75/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.63% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 71.55% val_time = 0.01
+INFO:  on_time Accuracy: 86.12% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 76/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.71% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 75.71% val_time = 0.01
+INFO:  on_time Accuracy: 88.69% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 77/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.97% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 58.84% val_time = 0.01
+INFO:  on_time Accuracy: 80.74% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 78/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.79% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.63% val_time = 0.01
+INFO:  on_time Accuracy: 92.69% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 89.04% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 79/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.61% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.56% val_time = 0.01
+INFO:  on_time Accuracy: 88.73% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 80/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.14% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 63.56% val_time = 0.01
+INFO:  on_time Accuracy: 83.17% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 81/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.51% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 83.76% val_time = 0.01
+INFO:  on_time Accuracy: 93.70% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 90.32% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 82/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.29% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.25% val_time = 0.01
+INFO:  on_time Accuracy: 79.70% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 83/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.32% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.85% val_time = 0.01
+INFO:  on_time Accuracy: 91.58% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 84/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.02% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 76.39% val_time = 0.01
+INFO:  on_time Accuracy: 90.33% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 85/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.21% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 68.67% val_time = 0.01
+INFO:  on_time Accuracy: 84.19% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 86/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.98% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 84.73% val_time = 0.01
+INFO:  on_time Accuracy: 93.72% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 90.81% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 87/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.91% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.18% val_time = 0.01
+INFO:  on_time Accuracy: 74.71% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 88/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.87% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 74.01% val_time = 0.01
+INFO:  on_time Accuracy: 88.40% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 89/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.56% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 48.84% val_time = 0.01
+INFO:  on_time Accuracy: 74.52% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 90/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.44% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 75.18% val_time = 0.01
+INFO:  on_time Accuracy: 88.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 91/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 78.65% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 50.07% val_time = 0.01
+INFO:  on_time Accuracy: 77.75% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 92/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.51% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 70.36% val_time = 0.01
+INFO:  on_time Accuracy: 84.77% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 93/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.86% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 78.48% val_time = 0.01
+INFO:  on_time Accuracy: 89.55% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 94/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.81% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 84.99% val_time = 0.01
+INFO:  on_time Accuracy: 92.86% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 95/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 63.76% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 46.46% val_time = 0.01
+INFO:  on_time Accuracy: 63.83% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 96/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.20% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.91% val_time = 0.01
+INFO:  on_time Accuracy: 87.44% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 97/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.37% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.99% val_time = 0.01
+INFO:  on_time Accuracy: 87.27% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 98/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.18% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.70% val_time = 0.01
+INFO:  on_time Accuracy: 82.47% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 99/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 67.36% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 33.75% val_time = 0.01
+INFO:  on_time Accuracy: 67.28% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 100/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 70.19% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 42.70% val_time = 0.01
+INFO:  on_time Accuracy: 70.15% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 101/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.91% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 71.16% val_time = 0.01
+INFO:  on_time Accuracy: 89.24% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 102/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.77% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 80.66% val_time = 0.01
+INFO:  on_time Accuracy: 91.66% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 103/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.07% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 83.35% val_time = 0.01
+INFO:  on_time Accuracy: 94.03% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 104/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.58% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 86.45% val_time = 0.01
+INFO:  on_time Accuracy: 94.70% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 91.91% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 105/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.67% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 49.05% val_time = 0.01
+INFO:  on_time Accuracy: 72.80% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 106/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 69.60% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.48% val_time = 0.01
+INFO:  on_time Accuracy: 69.33% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 107/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.68% val_time = 0.02
+INFO:  day_for_shipping Accuracy: 80.46% val_time = 0.02
+INFO:  on_time Accuracy: 90.50% val_time = 0.02
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 108/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.00% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 79.02% val_time = 0.01
+INFO:  on_time Accuracy: 89.26% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 109/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.83% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 86.66% val_time = 0.01
+INFO:  on_time Accuracy: 94.58% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 92.03% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 110/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.43% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.16% val_time = 0.01
+INFO:  on_time Accuracy: 93.35% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 111/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.06% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 74.73% val_time = 0.01
+INFO:  on_time Accuracy: 89.04% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 112/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.37% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.54% val_time = 0.01
+INFO:  on_time Accuracy: 87.27% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 113/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.49% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.69% val_time = 0.01
+INFO:  on_time Accuracy: 93.35% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 114/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.16% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 84.73% val_time = 0.01
+INFO:  on_time Accuracy: 93.10% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 115/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 71.92% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 44.22% val_time = 0.01
+INFO:  on_time Accuracy: 72.29% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 116/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 60.73% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 25.50% val_time = 0.01
+INFO:  on_time Accuracy: 60.50% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 117/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.84% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.44% val_time = 0.01
+INFO:  on_time Accuracy: 94.25% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 118/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.22% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 82.14% val_time = 0.01
+INFO:  on_time Accuracy: 93.35% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 119/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 68.12% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 39.64% val_time = 0.01
+INFO:  on_time Accuracy: 67.54% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 120/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 62.27% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 27.30% val_time = 0.01
+INFO:  on_time Accuracy: 62.16% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 121/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.69% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 80.02% val_time = 0.01
+INFO:  on_time Accuracy: 91.52% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 122/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.97% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 88.24% val_time = 0.01
+INFO:  on_time Accuracy: 95.36% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 92.86% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 123/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.54% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.99% val_time = 0.01
+INFO:  on_time Accuracy: 80.80% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 124/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.18% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.46% val_time = 0.01
+INFO:  on_time Accuracy: 95.03% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 125/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.60% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.32% val_time = 0.01
+INFO:  on_time Accuracy: 91.66% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 126/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 68.69% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 38.43% val_time = 0.01
+INFO:  on_time Accuracy: 68.63% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 127/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.06% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.03% val_time = 0.01
+INFO:  on_time Accuracy: 91.93% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 128/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.44% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 86.84% val_time = 0.01
+INFO:  on_time Accuracy: 94.50% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 129/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.47% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.07% val_time = 0.01
+INFO:  on_time Accuracy: 93.51% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 130/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.40% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.24% val_time = 0.01
+INFO:  on_time Accuracy: 85.20% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 131/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 75.63% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 51.00% val_time = 0.01
+INFO:  on_time Accuracy: 75.10% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 132/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.41% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.43% val_time = 0.01
+INFO:  on_time Accuracy: 79.82% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 133/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.97% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.34% val_time = 0.01
+INFO:  on_time Accuracy: 94.99% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 134/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.12% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 68.36% val_time = 0.01
+INFO:  on_time Accuracy: 86.10% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 135/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 78.49% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 54.88% val_time = 0.01
+INFO:  on_time Accuracy: 78.59% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 136/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.02% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 77.60% val_time = 0.01
+INFO:  on_time Accuracy: 88.95% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 137/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.33% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.84% val_time = 0.01
+INFO:  on_time Accuracy: 87.25% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 138/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 64.24% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 31.08% val_time = 0.01
+INFO:  on_time Accuracy: 63.89% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 139/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.83% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 82.28% val_time = 0.01
+INFO:  on_time Accuracy: 91.97% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 140/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.56% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.50% val_time = 0.01
+INFO:  on_time Accuracy: 94.64% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 141/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.76% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 82.88% val_time = 0.01
+INFO:  on_time Accuracy: 90.95% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 142/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.99% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.64% val_time = 0.01
+INFO:  on_time Accuracy: 94.72% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 143/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.78% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 86.10% val_time = 0.01
+INFO:  on_time Accuracy: 93.84% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 144/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.38% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.00% val_time = 0.01
+INFO:  on_time Accuracy: 94.58% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 145/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 70.52% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 41.61% val_time = 0.01
+INFO:  on_time Accuracy: 70.36% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 146/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 90.08% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 78.65% val_time = 0.01
+INFO:  on_time Accuracy: 90.00% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 147/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 84.27% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.18% val_time = 0.01
+INFO:  on_time Accuracy: 84.42% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 148/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.65% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 83.58% val_time = 0.01
+INFO:  on_time Accuracy: 92.53% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 149/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 69.33% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 39.93% val_time = 0.01
+INFO:  on_time Accuracy: 69.57% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 150/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 63.21% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 28.68% val_time = 0.01
+INFO:  on_time Accuracy: 63.33% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 151/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.41% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 67.58% val_time = 0.01
+INFO:  on_time Accuracy: 83.43% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 152/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.46% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.81% val_time = 0.01
+INFO:  on_time Accuracy: 74.50% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 153/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.89% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.57% val_time = 0.01
+INFO:  on_time Accuracy: 80.83% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 154/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.05% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 76.45% val_time = 0.01
+INFO:  on_time Accuracy: 86.94% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 155/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.32% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 89.22% val_time = 0.01
+INFO:  on_time Accuracy: 95.46% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 93.33% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 156/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.67% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 84.66% val_time = 0.01
+INFO:  on_time Accuracy: 92.94% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 157/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.52% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 77.15% val_time = 0.01
+INFO:  on_time Accuracy: 91.85% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 158/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.93% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 36.11% val_time = 0.01
+INFO:  on_time Accuracy: 66.89% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 159/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.56% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 45.92% val_time = 0.01
+INFO:  on_time Accuracy: 74.56% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 160/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 81.71% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 62.76% val_time = 0.01
+INFO:  on_time Accuracy: 81.73% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 161/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 73.37% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.18% val_time = 0.01
+INFO:  on_time Accuracy: 73.87% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 162/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 82.00% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.51% val_time = 0.01
+INFO:  on_time Accuracy: 81.65% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 163/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 86.64% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 71.20% val_time = 0.01
+INFO:  on_time Accuracy: 86.90% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 164/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.76% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 85.63% val_time = 0.01
+INFO:  on_time Accuracy: 93.72% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 165/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 76.86% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 54.26% val_time = 0.01
+INFO:  on_time Accuracy: 76.56% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 166/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.98% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 89.57% val_time = 0.01
+INFO:  on_time Accuracy: 95.91% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 93.82% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 167/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.05% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 58.49% val_time = 0.01
+INFO:  on_time Accuracy: 80.09% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 168/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 75.06% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 50.30% val_time = 0.01
+INFO:  on_time Accuracy: 74.81% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 169/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.29% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.70% val_time = 0.01
+INFO:  on_time Accuracy: 94.09% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 170/200 classification_loss = 0.00000 train_time = 0.27
+INFO:  ----------
+INFO:  late_risk Accuracy: 67.54% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 45.23% val_time = 0.01
+INFO:  on_time Accuracy: 67.13% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 171/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.22% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 83.41% val_time = 0.01
+INFO:  on_time Accuracy: 92.94% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 172/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.35% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 76.62% val_time = 0.01
+INFO:  on_time Accuracy: 88.93% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 173/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 80.99% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 59.84% val_time = 0.01
+INFO:  on_time Accuracy: 81.09% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 174/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 83.41% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 65.14% val_time = 0.01
+INFO:  on_time Accuracy: 83.12% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 175/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.57% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 89.65% val_time = 0.01
+INFO:  on_time Accuracy: 95.89% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 176/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.43% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 79.76% val_time = 0.01
+INFO:  on_time Accuracy: 93.70% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 177/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 89.94% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 77.21% val_time = 0.01
+INFO:  on_time Accuracy: 89.94% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 178/200 classification_loss = 0.00000 train_time = 0.27
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.12% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.61% val_time = 0.01
+INFO:  on_time Accuracy: 92.61% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 179/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.26% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 88.46% val_time = 0.01
+INFO:  on_time Accuracy: 95.30% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 180/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.93% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 74.28% val_time = 0.01
+INFO:  on_time Accuracy: 88.59% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 181/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 85.65% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 69.35% val_time = 0.01
+INFO:  on_time Accuracy: 85.69% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 182/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.93% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.72% val_time = 0.01
+INFO:  on_time Accuracy: 88.44% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 183/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 74.42% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 49.41% val_time = 0.01
+INFO:  on_time Accuracy: 74.40% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 184/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 68.08% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 40.03% val_time = 0.01
+INFO:  on_time Accuracy: 69.31% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 185/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 87.35% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 72.76% val_time = 0.01
+INFO:  on_time Accuracy: 87.58% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 186/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 78.94% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 54.77% val_time = 0.01
+INFO:  on_time Accuracy: 78.75% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 187/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 93.94% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 88.01% val_time = 0.01
+INFO:  on_time Accuracy: 94.70% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 188/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 91.99% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 81.11% val_time = 0.01
+INFO:  on_time Accuracy: 92.26% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 189/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.93% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 90.06% val_time = 0.01
+INFO:  on_time Accuracy: 96.04% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 94.01% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 190/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.79% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 90.10% val_time = 0.01
+INFO:  on_time Accuracy: 96.00% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 191/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 88.56% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 73.25% val_time = 0.01
+INFO:  on_time Accuracy: 88.69% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 192/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 95.34% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 89.86% val_time = 0.01
+INFO:  on_time Accuracy: 95.30% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 193/200 classification_loss = 0.00000 train_time = 0.14
+INFO:  ----------
+INFO:  late_risk Accuracy: 71.81% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 42.93% val_time = 0.01
+INFO:  on_time Accuracy: 71.87% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 194/200 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 96.04% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 90.64% val_time = 0.01
+INFO:  on_time Accuracy: 96.26% val_time = 0.01
+INFO:  ----------
+INFO:  best_overall_accuracy: 94.31% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 195/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 73.41% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 47.94% val_time = 0.01
+INFO:  on_time Accuracy: 73.39% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 196/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 76.14% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 51.47% val_time = 0.01
+INFO:  on_time Accuracy: 76.12% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 197/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 79.86% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 60.01% val_time = 0.01
+INFO:  on_time Accuracy: 80.00% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 198/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 92.84% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 83.97% val_time = 0.01
+INFO:  on_time Accuracy: 93.08% val_time = 0.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 199/200 classification_loss = 0.00000 train_time = 0.15
+INFO:  ----------
+INFO:  late_risk Accuracy: 94.79% val_time = 0.01
+INFO:  day_for_shipping Accuracy: 87.78% val_time = 0.01
+INFO:  on_time Accuracy: 94.76% val_time = 0.01
+INFO:  simulator training stage cost time: 38.3757905960083
+INFO:  best_acc1 0.9604211347241177
+INFO:  best_acc2 0.9064145057516085
+INFO:  best_acc3 0.9625658023006434
+INFO:  best_overall_accuracy 0.9431338142587898
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 0/6000 loss = 52.35635 profit_loss = 1.47858 late_loss = 3.71607 train_time = 2.72
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 51.94650 ma_loss = 0.19318
+INFO:  ----------
+INFO:  avg_profit = 0.33708 on_time_ratio = 0.56678 overall = 0.90386 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19698 profit_min_percent_20 = 0.33613 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 0.90386 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 1/6000 loss = 50.61855 profit_loss = 1.42626 late_loss = 3.65430 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 50.80565 ma_loss = 0.08112
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.37766 overall = 0.72222 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 2/6000 loss = 49.56635 profit_loss = 1.38102 late_loss = 3.51652 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.97545 ma_loss = 0.33966
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.57965 overall = 0.92420 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 0.92420 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 3/6000 loss = 49.54186 profit_loss = 1.38049 late_loss = 3.60017 train_time = 2.64
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.80651 ma_loss = 0.29749
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.35562 overall = 0.70018 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 4/6000 loss = 49.79251 profit_loss = 1.39526 late_loss = 3.51609 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.11359 ma_loss = 0.24260
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.67869 overall = 1.02325 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 1.02325 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 5/6000 loss = 49.46622 profit_loss = 1.39060 late_loss = 3.45579 train_time = 2.53
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.46394 ma_loss = 0.25500
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.75219 overall = 1.09675 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 1.09675 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 6/6000 loss = 49.77336 profit_loss = 1.38469 late_loss = 3.51488 train_time = 2.53
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.99569 ma_loss = 0.27850
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.63950 overall = 0.98406 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 7/6000 loss = 49.70791 profit_loss = 1.39520 late_loss = 3.55859 train_time = 2.53
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.53782 ma_loss = 0.25856
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.62566 overall = 0.97022 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 8/6000 loss = 49.84900 profit_loss = 1.38794 late_loss = 3.55566 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.43597 ma_loss = 0.26776
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.59095 overall = 0.93551 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 9/6000 loss = 49.61037 profit_loss = 1.38925 late_loss = 3.55721 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.46455 ma_loss = 0.26740
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.59602 overall = 0.94058 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 10/6000 loss = 49.39842 profit_loss = 1.38827 late_loss = 3.55486 train_time = 2.53
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.43132 ma_loss = 0.26376
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.44902 overall = 0.79358 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 11/6000 loss = 49.80526 profit_loss = 1.38913 late_loss = 3.49815 train_time = 2.65
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.87273 ma_loss = 0.26703
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.75648 overall = 1.10104 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 1.10104 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 12/6000 loss = 49.72649 profit_loss = 1.38584 late_loss = 3.54955 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.35395 ma_loss = 0.25633
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.60265 overall = 0.94721 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 13/6000 loss = 49.61986 profit_loss = 1.38923 late_loss = 3.55805 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.47283 ma_loss = 0.26826
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.58978 overall = 0.93434 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 14/6000 loss = 49.46098 profit_loss = 1.38638 late_loss = 3.50335 train_time = 2.65
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.89729 ma_loss = 0.26765
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.62410 overall = 0.96866 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 15/6000 loss = 49.91908 profit_loss = 1.39484 late_loss = 3.61716 train_time = 2.54
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 50.12005 ma_loss = 0.26854
+INFO:  ----------
+INFO:  avg_profit = 0.34456 on_time_ratio = 0.36186 overall = 0.70642 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 16/6000 loss = 50.01355 profit_loss = 1.38650 late_loss = 3.63058 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 50.17078 ma_loss = 0.26451
+INFO:  ----------
+INFO:  avg_profit = 0.34443 on_time_ratio = 0.44453 overall = 0.78896 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.19887 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 17/6000 loss = 49.65086 profit_loss = 1.39207 late_loss = 3.47401 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.66081 ma_loss = 0.25618
+INFO:  ----------
+INFO:  avg_profit = 0.34418 on_time_ratio = 0.76175 overall = 1.10593 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.19740 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  best_dm_accuracy: 1.10593 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 18/6000 loss = 50.00903 profit_loss = 1.39075 late_loss = 3.48804 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.78784 ma_loss = 0.26018
+INFO:  ----------
+INFO:  avg_profit = 0.34321 on_time_ratio = 0.75356 overall = 1.09677 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19682 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 19/6000 loss = 49.83455 profit_loss = 1.38703 late_loss = 3.61378 train_time = 2.62
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 50.00807 ma_loss = 0.25649
+INFO:  ----------
+INFO:  avg_profit = 0.34179 on_time_ratio = 0.36225 overall = 0.70405 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19364 profit_min_percent_20 = 0.35569 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 20/6000 loss = 49.89933 profit_loss = 1.39119 late_loss = 3.58592 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.77102 ma_loss = 0.24827
+INFO:  ----------
+INFO:  avg_profit = 0.33521 on_time_ratio = 0.36966 overall = 0.70487 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.33613 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 21/6000 loss = 50.17373 profit_loss = 1.39244 late_loss = 3.58802 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.80464 ma_loss = 0.21375
+INFO:  ----------
+INFO:  avg_profit = 0.32935 on_time_ratio = 0.40788 overall = 0.73723 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18287 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 22/6000 loss = 50.07310 profit_loss = 1.40250 late_loss = 3.58018 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.82680 ma_loss = 0.12003
+INFO:  ----------
+INFO:  avg_profit = 0.32061 on_time_ratio = 0.41704 overall = 0.73765 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.23408 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 23/6000 loss = 49.90468 profit_loss = 1.39230 late_loss = 3.58634 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.78644 ma_loss = 0.03051
+INFO:  ----------
+INFO:  avg_profit = 0.31304 on_time_ratio = 0.41685 overall = 0.72988 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19557 profit_min_percent_20 = 0.23408 profit_min_percent_30 = 0.23772
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 24/6000 loss = 49.47980 profit_loss = 1.37718 late_loss = 3.51149 train_time = 2.55
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.88673 ma_loss = 0.00821
+INFO:  ----------
+INFO:  avg_profit = 0.31161 on_time_ratio = 0.58569 overall = 0.89730 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.18268 profit_min_percent_20 = 0.23408 profit_min_percent_30 = 0.23772
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 25/6000 loss = 49.17461 profit_loss = 1.35259 late_loss = 3.48789 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.40483 ma_loss = 0.02072
+INFO:  ----------
+INFO:  avg_profit = 0.31748 on_time_ratio = 0.59368 overall = 0.91116 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19557 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 26/6000 loss = 48.64256 profit_loss = 1.35540 late_loss = 3.47477 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.30175 ma_loss = 0.01177
+INFO:  ----------
+INFO:  avg_profit = 0.32271 on_time_ratio = 0.53480 overall = 0.85752 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18898 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 27/6000 loss = 48.71491 profit_loss = 1.35579 late_loss = 3.44474 train_time = 2.60
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.00533 ma_loss = 0.02868
+INFO:  ----------
+INFO:  avg_profit = 0.32383 on_time_ratio = 0.63131 overall = 0.95514 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.27134 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 28/6000 loss = 48.43921 profit_loss = 1.34465 late_loss = 3.38059 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.25235 ma_loss = 0.04711
+INFO:  ----------
+INFO:  avg_profit = 0.32147 on_time_ratio = 0.66426 overall = 0.98573 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 29/6000 loss = 48.69888 profit_loss = 1.34912 late_loss = 3.55620 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 49.05318 ma_loss = 0.04047
+INFO:  ----------
+INFO:  avg_profit = 0.31997 on_time_ratio = 0.45486 overall = 0.77484 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18582 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 30/6000 loss = 48.83766 profit_loss = 1.34487 late_loss = 3.52017 train_time = 2.60
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.65042 ma_loss = 0.02177
+INFO:  ----------
+INFO:  avg_profit = 0.32976 on_time_ratio = 0.48586 overall = 0.81562 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.29913
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 31/6000 loss = 48.76083 profit_loss = 1.34711 late_loss = 3.51472 train_time = 2.53
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.61826 ma_loss = 0.01550
+INFO:  ----------
+INFO:  avg_profit = 0.32216 on_time_ratio = 0.49561 overall = 0.81778 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 32/6000 loss = 48.46213 profit_loss = 1.33934 late_loss = 3.55380 train_time = 2.58
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.93138 ma_loss = 0.01272
+INFO:  ----------
+INFO:  avg_profit = 0.32573 on_time_ratio = 0.28719 overall = 0.61292 val_time = 0.59
+INFO:  profit_min_percent_10 = 0.18074 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 33/6000 loss = 48.13022 profit_loss = 1.33952 late_loss = 3.43644 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.75956 ma_loss = 0.01905
+INFO:  ----------
+INFO:  avg_profit = 0.32664 on_time_ratio = 0.55625 overall = 0.88289 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18268 profit_min_percent_20 = 0.27985 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 34/6000 loss = 48.28296 profit_loss = 1.34046 late_loss = 3.48214 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.22605 ma_loss = 0.02416
+INFO:  ----------
+INFO:  avg_profit = 0.32116 on_time_ratio = 0.47183 overall = 0.79298 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 35/6000 loss = 48.45498 profit_loss = 1.34085 late_loss = 3.46731 train_time = 2.62
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.08157 ma_loss = 0.01315
+INFO:  ----------
+INFO:  avg_profit = 0.32726 on_time_ratio = 0.46520 overall = 0.79246 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 36/6000 loss = 48.37462 profit_loss = 1.34159 late_loss = 3.52440 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.65992 ma_loss = 0.02040
+INFO:  ----------
+INFO:  avg_profit = 0.32176 on_time_ratio = 0.37688 overall = 0.69864 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18011 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 37/6000 loss = 48.31294 profit_loss = 1.33594 late_loss = 3.45315 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.89080 ma_loss = 0.01433
+INFO:  ----------
+INFO:  avg_profit = 0.32361 on_time_ratio = 0.48723 overall = 0.81084 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18218 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 38/6000 loss = 48.07628 profit_loss = 1.33127 late_loss = 3.48351 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.14778 ma_loss = 0.00757
+INFO:  ----------
+INFO:  avg_profit = 0.32763 on_time_ratio = 0.50400 overall = 0.83162 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18011 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.32922
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 39/6000 loss = 48.19254 profit_loss = 1.32949 late_loss = 3.40826 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.37746 ma_loss = 0.02889
+INFO:  ----------
+INFO:  avg_profit = 0.32850 on_time_ratio = 0.61513 overall = 0.94363 val_time = 0.57
+INFO:  profit_min_percent_10 = 0.18011 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.31405
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 40/6000 loss = 47.84687 profit_loss = 1.32857 late_loss = 3.46547 train_time = 2.52
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.94039 ma_loss = 0.02591
+INFO:  ----------
+INFO:  avg_profit = 0.32979 on_time_ratio = 0.45564 overall = 0.78543 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18011 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.32478
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 41/6000 loss = 47.91857 profit_loss = 1.33517 late_loss = 3.43906 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.74232 ma_loss = 0.02608
+INFO:  ----------
+INFO:  avg_profit = 0.32987 on_time_ratio = 0.57341 overall = 0.90327 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18074 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 42/6000 loss = 48.09624 profit_loss = 1.33142 late_loss = 3.51856 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 48.49976 ma_loss = 0.03900
+INFO:  ----------
+INFO:  avg_profit = 0.32161 on_time_ratio = 0.48489 overall = 0.80650 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.29079
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 43/6000 loss = 47.62127 profit_loss = 1.33642 late_loss = 3.39395 train_time = 2.66
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.30374 ma_loss = 0.01069
+INFO:  ----------
+INFO:  avg_profit = 0.32918 on_time_ratio = 0.64106 overall = 0.97024 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18268 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 44/6000 loss = 47.80666 profit_loss = 1.32569 late_loss = 3.43410 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.59789 ma_loss = 0.01238
+INFO:  ----------
+INFO:  avg_profit = 0.32610 on_time_ratio = 0.49561 overall = 0.82172 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 45/6000 loss = 47.42990 profit_loss = 1.31811 late_loss = 3.39502 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.13126 ma_loss = 0.02679
+INFO:  ----------
+INFO:  avg_profit = 0.32712 on_time_ratio = 0.55079 overall = 0.87791 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18218 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 46/6000 loss = 47.63064 profit_loss = 1.31602 late_loss = 3.45141 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.67430 ma_loss = 0.02393
+INFO:  ----------
+INFO:  avg_profit = 0.32631 on_time_ratio = 0.50068 overall = 0.82700 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18011 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 47/6000 loss = 47.30711 profit_loss = 1.31939 late_loss = 3.37041 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.89800 ma_loss = 0.04296
+INFO:  ----------
+INFO:  avg_profit = 0.33050 on_time_ratio = 0.59115 overall = 0.92165 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18074 profit_min_percent_20 = 0.27866 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 48/6000 loss = 47.51085 profit_loss = 1.31065 late_loss = 3.32669 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.37346 ma_loss = 0.06755
+INFO:  ----------
+INFO:  avg_profit = 0.32939 on_time_ratio = 0.67947 overall = 1.00885 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.18218 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 49/6000 loss = 47.44286 profit_loss = 1.31651 late_loss = 3.39743 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.13935 ma_loss = 0.03478
+INFO:  ----------
+INFO:  avg_profit = 0.32665 on_time_ratio = 0.64184 overall = 0.96849 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18074 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 50/6000 loss = 47.35767 profit_loss = 1.30766 late_loss = 3.40159 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.09249 ma_loss = 0.08623
+INFO:  ----------
+INFO:  avg_profit = 0.32960 on_time_ratio = 0.52622 overall = 0.85582 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18218 profit_min_percent_20 = 0.27189 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 51/6000 loss = 47.12310 profit_loss = 1.31933 late_loss = 3.44748 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.66807 ma_loss = 0.06163
+INFO:  ----------
+INFO:  avg_profit = 0.32718 on_time_ratio = 0.37415 overall = 0.70132 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.18451 profit_min_percent_20 = 0.23772 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 52/6000 loss = 47.23611 profit_loss = 1.30808 late_loss = 3.35595 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.64031 ma_loss = 0.12418
+INFO:  ----------
+INFO:  avg_profit = 0.33066 on_time_ratio = 0.62371 overall = 0.95437 val_time = 0.50
+INFO:  profit_min_percent_10 = 0.18268 profit_min_percent_20 = 0.25277 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 53/6000 loss = 47.01549 profit_loss = 1.30833 late_loss = 3.38991 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.98240 ma_loss = 0.04978
+INFO:  ----------
+INFO:  avg_profit = 0.33276 on_time_ratio = 0.48703 overall = 0.81979 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 54/6000 loss = 47.11429 profit_loss = 1.30671 late_loss = 3.40501 train_time = 2.63
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.11716 ma_loss = 0.07848
+INFO:  ----------
+INFO:  avg_profit = 0.33163 on_time_ratio = 0.52973 overall = 0.86136 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18349 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 55/6000 loss = 47.24856 profit_loss = 1.31434 late_loss = 3.43479 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.49134 ma_loss = 0.03597
+INFO:  ----------
+INFO:  avg_profit = 0.33396 on_time_ratio = 0.54689 overall = 0.88085 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 56/6000 loss = 46.69024 profit_loss = 1.30180 late_loss = 3.44648 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.48277 ma_loss = 0.04903
+INFO:  ----------
+INFO:  avg_profit = 0.33309 on_time_ratio = 0.31020 overall = 0.64328 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 57/6000 loss = 47.36218 profit_loss = 1.30916 late_loss = 3.34387 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.53034 ma_loss = 0.05346
+INFO:  ----------
+INFO:  avg_profit = 0.33145 on_time_ratio = 0.64165 overall = 0.97310 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 58/6000 loss = 46.65738 profit_loss = 1.29997 late_loss = 3.37265 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.72618 ma_loss = 0.08778
+INFO:  ----------
+INFO:  avg_profit = 0.33469 on_time_ratio = 0.41431 overall = 0.74900 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19134 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 59/6000 loss = 46.83125 profit_loss = 1.30040 late_loss = 3.27709 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 45.77488 ma_loss = 0.02845
+INFO:  ----------
+INFO:  avg_profit = 0.33368 on_time_ratio = 0.74400 overall = 1.07768 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.18985 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 60/6000 loss = 46.86600 profit_loss = 1.30403 late_loss = 3.45549 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.59522 ma_loss = 0.05104
+INFO:  ----------
+INFO:  avg_profit = 0.33346 on_time_ratio = 0.31644 overall = 0.64990 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19134 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 61/6000 loss = 46.80139 profit_loss = 1.30617 late_loss = 3.36824 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.74411 ma_loss = 0.07983
+INFO:  ----------
+INFO:  avg_profit = 0.33179 on_time_ratio = 0.53032 overall = 0.86211 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.18984 profit_min_percent_20 = 0.27866 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 62/6000 loss = 46.92410 profit_loss = 1.29668 late_loss = 3.34543 train_time = 2.61
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.42110 ma_loss = 0.07418
+INFO:  ----------
+INFO:  avg_profit = 0.33689 on_time_ratio = 0.59173 overall = 0.92862 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19557 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 63/6000 loss = 46.54818 profit_loss = 1.30362 late_loss = 3.42704 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.30656 ma_loss = 0.02124
+INFO:  ----------
+INFO:  avg_profit = 0.33539 on_time_ratio = 0.38994 overall = 0.72533 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.19176 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 64/6000 loss = 46.99810 profit_loss = 1.30168 late_loss = 3.39354 train_time = 2.50
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.95226 ma_loss = 0.03596
+INFO:  ----------
+INFO:  avg_profit = 0.33582 on_time_ratio = 0.52174 overall = 0.85756 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19134 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 65/6000 loss = 46.90993 profit_loss = 1.29738 late_loss = 3.35657 train_time = 2.62
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.53950 ma_loss = 0.20311
+INFO:  ----------
+INFO:  avg_profit = 0.33730 on_time_ratio = 0.57029 overall = 0.90759 val_time = 0.48
+INFO:  profit_min_percent_10 = 0.19698 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 66/6000 loss = 47.07504 profit_loss = 1.30645 late_loss = 3.40493 train_time = 2.51
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 47.11379 ma_loss = 0.05135
+INFO:  ----------
+INFO:  avg_profit = 0.33137 on_time_ratio = 0.53266 overall = 0.86403 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.27189 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 67/6000 loss = 46.61394 profit_loss = 1.29594 late_loss = 3.37405 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 46.69994 ma_loss = 0.01720
+INFO:  ----------
+INFO:  avg_profit = 0.33496 on_time_ratio = 0.39579 overall = 0.73075 val_time = 0.60
+INFO:  profit_min_percent_10 = 0.18486 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 68/6000 loss = 46.54889 profit_loss = 1.29722 late_loss = 3.30255 train_time = 2.49
+INFO:  profit = 0.00000 on_time = 0.00000 mi_loss = 45.99773 ma_loss = 0.05536
+INFO:  ----------
+INFO:  avg_profit = 0.33559 on_time_ratio = 0.55293 overall = 0.88852 val_time = 0.49
+INFO:  profit_min_percent_10 = 0.19134 profit_min_percent_20 = 0.29079 profit_min_percent_30 = 0.35569
+INFO:  decision_maker training stage cost time: 248.8489227294922
+INFO:  best_dm_accuracy 1.1059318780899048
+INFO:  best_profit 0.344184935092926
+INFO:  best_on_time 0.76174692922597
+INFO:  best_pmp_1 0.19740130007266998
+INFO:  best_pmp_2 0.3556915819644928
+INFO:  best_pmp_3 0.3556915819644928
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mbreezy-energy-90[0m at: [34m[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20251104_191556-iyldjzgn/logs[0m

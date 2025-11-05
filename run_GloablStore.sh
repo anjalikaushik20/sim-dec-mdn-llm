@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=16G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/llm_dec.%j.out
-#SBATCH -e output/llm_dec.%j.err
+#SBATCH -o output/GlobalStore/vanila.%j.out
+#SBATCH -e output/GlobalStore/vanila.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 
@@ -16,6 +16,4 @@ module load mamba/latest
 eval "$(conda shell.bash hook)"
 conda activate simenv
 
-wandb login $WB_LOGIN --relogin
-
-python3 main/cb_main_llm.py --use_gpu 1 --dataset DataCo --epochs 350 --train_mode 0 --wandb 1
+python3 main/cb_main.py --use_gpu 1 --dataset GlobalStore --epochs 200 --train_mode 0 --wandb 1

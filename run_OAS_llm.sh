@@ -2,7 +2,7 @@
 #SBATCH -A grp_yanjiefu
 #SBATCH -N 1
 #SBATCH -c 4
-#SBATCH -t 0-01:00:00
+#SBATCH -t 0-04:00:00
 #SBATCH -p htc
 #SBATCH -q public
 #SBATCH --mem=16G

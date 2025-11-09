@@ -1,0 +1,637 @@
+INFO:  --------------------------------Een Init----------------------------------
+INFO:  Code will run in cuda:0
+INFO:  --------------------------------Dataset Init------------------------------
+INFO:  --------------------------------Model Init--------------------------------
+INFO:  --------------------------------Session Init------------------------------
+INFO:  ------------------------------------ Main --------------------------------
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 0/6000 classification_loss = 0.00000 train_time = 0.50
+INFO:  ----------
+INFO:  late_risk Accuracy: 0.00% val_time = 1762661186.24
+INFO:  day_for_shipping Accuracy: 2.49% val_time = 1762661186.24
+INFO:  on_time Accuracy: 23.70% val_time = 1762661186.24
+INFO:  ----------
+INFO:  best_overall_accuracy: 8.73% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 1/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.36
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661186.36
+INFO:  on_time Accuracy: 76.30% val_time = 1762661186.36
+INFO:  ----------
+INFO:  best_overall_accuracy: 43.35% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 2/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.49
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661186.49
+INFO:  on_time Accuracy: 76.30% val_time = 1762661186.49
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 3/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.61
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661186.61
+INFO:  on_time Accuracy: 76.30% val_time = 1762661186.61
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 4/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.73
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661186.73
+INFO:  on_time Accuracy: 0.00% val_time = 1762661186.73
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 5/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.85
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661186.85
+INFO:  on_time Accuracy: 0.00% val_time = 1762661186.85
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 6/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661186.98
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661186.98
+INFO:  on_time Accuracy: 0.00% val_time = 1762661186.98
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 7/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 0.00% val_time = 1762661187.25
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661187.25
+INFO:  on_time Accuracy: 0.00% val_time = 1762661187.25
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 8/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661187.38
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661187.38
+INFO:  on_time Accuracy: 0.00% val_time = 1762661187.38
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 9/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661187.50
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661187.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661187.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 10/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661187.62
+INFO:  day_for_shipping Accuracy: 2.49% val_time = 1762661187.62
+INFO:  on_time Accuracy: 23.70% val_time = 1762661187.62
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 11/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661187.75
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661187.75
+INFO:  on_time Accuracy: 76.30% val_time = 1762661187.75
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 12/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661187.87
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661187.87
+INFO:  on_time Accuracy: 76.30% val_time = 1762661187.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 13/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 0.00% val_time = 1762661187.99
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661187.99
+INFO:  on_time Accuracy: 0.00% val_time = 1762661187.99
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 14/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661188.12
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661188.12
+INFO:  on_time Accuracy: 76.30% val_time = 1762661188.12
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 15/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661188.24
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661188.24
+INFO:  on_time Accuracy: 0.00% val_time = 1762661188.24
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 16/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661188.37
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661188.37
+INFO:  on_time Accuracy: 0.00% val_time = 1762661188.37
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 17/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661188.49
+INFO:  day_for_shipping Accuracy: 2.49% val_time = 1762661188.49
+INFO:  on_time Accuracy: 23.70% val_time = 1762661188.49
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 18/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661188.62
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661188.62
+INFO:  on_time Accuracy: 76.30% val_time = 1762661188.62
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 19/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661188.74
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661188.74
+INFO:  on_time Accuracy: 76.30% val_time = 1762661188.74
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 20/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661188.87
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661188.87
+INFO:  on_time Accuracy: 0.00% val_time = 1762661188.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 21/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661188.99
+INFO:  day_for_shipping Accuracy: 0.14% val_time = 1762661188.99
+INFO:  on_time Accuracy: 0.00% val_time = 1762661188.99
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 22/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.12
+INFO:  day_for_shipping Accuracy: 0.14% val_time = 1762661189.12
+INFO:  on_time Accuracy: 76.30% val_time = 1762661189.12
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 23/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.38
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661189.38
+INFO:  on_time Accuracy: 76.30% val_time = 1762661189.38
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 24/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.50
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661189.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661189.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 25/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.63
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661189.63
+INFO:  on_time Accuracy: 76.30% val_time = 1762661189.63
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 26/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.75
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661189.75
+INFO:  on_time Accuracy: 0.00% val_time = 1762661189.75
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 27/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661189.87
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661189.87
+INFO:  on_time Accuracy: 76.30% val_time = 1762661189.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 28/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661189.99
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661189.99
+INFO:  on_time Accuracy: 0.00% val_time = 1762661189.99
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 29/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661190.12
+INFO:  day_for_shipping Accuracy: 2.99% val_time = 1762661190.12
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.12
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 30/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661190.24
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.24
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.24
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 31/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661190.36
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.36
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.36
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 32/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661190.49
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.49
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.49
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 33/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661190.61
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.61
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.61
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 34/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661190.73
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.73
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.73
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 35/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661190.85
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661190.85
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.85
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 36/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661190.98
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661190.98
+INFO:  on_time Accuracy: 76.30% val_time = 1762661190.98
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 37/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661191.10
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661191.10
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.10
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 38/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661191.22
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661191.22
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.22
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 39/6000 classification_loss = 0.00000 train_time = 0.26
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661191.50
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661191.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 40/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661191.63
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661191.63
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.63
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 41/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661191.76
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661191.76
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.76
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 42/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661191.88
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661191.88
+INFO:  on_time Accuracy: 76.30% val_time = 1762661191.88
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 43/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661192.00
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661192.00
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.00
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 44/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661192.13
+INFO:  day_for_shipping Accuracy: 0.14% val_time = 1762661192.13
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.13
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 45/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661192.25
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661192.25
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.25
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 46/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661192.37
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661192.37
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.37
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 47/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661192.50
+INFO:  day_for_shipping Accuracy: 0.14% val_time = 1762661192.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 48/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 49.22% val_time = 1762661192.62
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661192.62
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.62
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 49/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 50.78% val_time = 1762661192.74
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661192.74
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.74
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 50/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.88% val_time = 1762661192.86
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661192.86
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.86
+INFO:  ----------
+INFO:  best_overall_accuracy: 47.73% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 51/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661192.99
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661192.99
+INFO:  on_time Accuracy: 76.30% val_time = 1762661192.99
+INFO:  ----------
+INFO:  best_overall_accuracy: 49.62% 
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 52/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.11
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661193.11
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.11
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 53/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.24
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661193.24
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.24
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 54/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.50
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661193.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 55/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.62
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661193.62
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.62
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 56/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.74
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661193.74
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.74
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 57/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661193.87
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661193.87
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 58/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.88% val_time = 1762661193.99
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661193.99
+INFO:  on_time Accuracy: 76.30% val_time = 1762661193.99
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 59/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.88% val_time = 1762661194.11
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661194.11
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.11
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 60/6000 classification_loss = 0.00000 train_time = 0.12
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661194.24
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661194.24
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.24
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 61/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661194.37
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661194.37
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.37
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 62/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661194.50
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661194.50
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.50
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 63/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661194.63
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661194.63
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.63
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 64/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661194.75
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661194.75
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.75
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 65/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.88% val_time = 1762661194.88
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661194.88
+INFO:  on_time Accuracy: 76.30% val_time = 1762661194.88
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 66/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.00
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661195.00
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.00
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 67/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.12
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661195.12
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.12
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 68/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.25
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661195.25
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.25
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 69/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 66.88% val_time = 1762661195.51
+INFO:  day_for_shipping Accuracy: 0.04% val_time = 1762661195.51
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.51
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 70/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.63
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661195.63
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.63
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 71/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.75
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661195.75
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.75
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 72/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661195.87
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661195.87
+INFO:  on_time Accuracy: 76.30% val_time = 1762661195.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 73/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.00
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661196.00
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.00
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 74/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.13
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661196.13
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.13
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 75/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.25
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661196.25
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.25
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 76/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.37
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661196.37
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.37
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 77/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.49
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661196.49
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.49
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 78/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.62
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661196.62
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.62
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 79/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.75
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661196.75
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.75
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 80/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661196.87
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661196.87
+INFO:  on_time Accuracy: 76.30% val_time = 1762661196.87
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 81/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.00
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.00
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.00
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 82/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.12
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.12
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.12
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 83/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.25
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.25
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.25
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 84/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.38
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.38
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.38
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 85/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.65
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.65
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.65
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 86/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.77
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.77
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.77
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 87/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661197.89
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661197.89
+INFO:  on_time Accuracy: 76.30% val_time = 1762661197.89
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 88/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.02
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661198.02
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.02
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 89/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.14
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661198.14
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.14
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 90/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.27
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661198.27
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.27
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 91/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.39
+INFO:  day_for_shipping Accuracy: 0.07% val_time = 1762661198.39
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.39
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 92/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.52
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661198.52
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.52
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 93/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.64
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661198.64
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.64
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 94/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.77
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661198.77
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.77
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 95/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661198.89
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661198.89
+INFO:  on_time Accuracy: 76.30% val_time = 1762661198.89
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 96/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.01
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.01
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.01
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 97/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.14
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.14
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.14
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 98/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.26
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.26
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.26
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 99/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.39
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.39
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.39
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 100/6000 classification_loss = 0.00000 train_time = 0.25
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.65
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.65
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.65
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 101/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.77
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.77
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.77
+INFO:  --------------------------------------------------
+INFO:  TRAIN:epoch = 102/6000 classification_loss = 0.00000 train_time = 0.11
+INFO:  ----------
+INFO:  late_risk Accuracy: 72.49% val_time = 1762661199.90
+INFO:  day_for_shipping Accuracy: 0.00% val_time = 1762661199.90
+INFO:  on_time Accuracy: 76.30% val_time = 1762661199.90
+INFO:  simulator training stage cost time: 14.1878182888031
+INFO:  best_acc1 0.7249466950959488
+INFO:  best_acc2 0.0007107320540156361
+INFO:  best_acc3 0.7629708599857854
+INFO:  best_overall_accuracy 0.49620942904524995

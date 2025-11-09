@@ -1,0 +1,120 @@
+
+=====================================================================
+This module is only for creating or activating Python environments:
+$ mamba create -n myenv -c conda-forge python=3 <package_name>
+$ source activate myenv
+
+Only run "pip install" after activating an environment.
+Running pip without activating an environment is known to cause issues.
+
+To list available environments:
+$ mamba info --envs
+
+Other uses are not tested. More info: https://links.asu.edu/solpy
+=====================================================================
+
+  
+/home/akaush39/.conda/envs/simenv/lib/python3.12/site-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'repr' attribute with value False was provided to the `Field()` function, which has no effect in the context it was used. 'repr' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
+  warnings.warn(
+/home/akaush39/.conda/envs/simenv/lib/python3.12/site-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'frozen' attribute with value True was provided to the `Field()` function, which has no effect in the context it was used. 'frozen' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
+  warnings.warn(
+wandb: Appending key for api.wandb.ai to your netrc file: /home/akaush39/.netrc
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+/home/akaush39/.conda/envs/simenv/lib/python3.12/site-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'repr' attribute with value False was provided to the `Field()` function, which has no effect in the context it was used. 'repr' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
+  warnings.warn(
+/home/akaush39/.conda/envs/simenv/lib/python3.12/site-packages/pydantic/_internal/_generate_schema.py:2249: UnsupportedFieldAttributeWarning: The 'frozen' attribute with value True was provided to the `Field()` function, which has no effect in the context it was used. 'frozen' is field-specific metadata, and can only be attached to a model field using `Annotated` metadata or by assignment. This may have happened because an `Annotated` type alias using the `type` statement was used, or if the `Field()` function was attached to a single member of a union type.
+  warnings.warn(
+Note: Environment variable`HF_TOKEN` is set and is the current active token independently from the token you've just configured.
+wandb: Currently logged in as: akaush39 (akaush39-arizona-state-university) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.22.2
+wandb: Run data is saved locally in /home/akaush39/KDD/sim-dec-mdn-llm/wandb/run-20251107_215349-h293clg6
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run exalted-forest-104
+wandb: ⭐️ View project at https://wandb.ai/akaush39-arizona-state-university/uncategorized
+wandb: 🚀 View run at https://wandb.ai/akaush39-arizona-state-university/uncategorized/runs/h293clg6
+Device set to use cuda:0
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:01<00:13,  1.74s/it] 67%|██████▋   | 6/9 [00:01<00:00,  4.27it/s]100%|██████████| 9/9 [00:01<00:00,  4.71it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 45.86it/s]100%|██████████| 9/9 [00:00<00:00, 48.93it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.23it/s]100%|██████████| 9/9 [00:00<00:00, 49.84it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 33%|███▎      | 3/9 [00:00<00:00, 16.69it/s] 89%|████████▉ | 8/9 [00:00<00:00, 30.59it/s]100%|██████████| 9/9 [00:00<00:00, 30.30it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.50it/s]100%|██████████| 9/9 [00:00<00:00, 50.40it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.76it/s]100%|██████████| 9/9 [00:00<00:00, 50.70it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.67it/s]100%|██████████| 9/9 [00:00<00:00, 50.16it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 44%|████▍     | 4/9 [00:00<00:00, 38.70it/s]100%|██████████| 9/9 [00:00<00:00, 45.56it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.15it/s]100%|██████████| 9/9 [00:00<00:00, 49.93it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.88it/s]100%|██████████| 9/9 [00:00<00:00, 50.28it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.79it/s]100%|██████████| 9/9 [00:00<00:00, 49.49it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 44%|████▍     | 4/9 [00:00<00:00, 20.03it/s]100%|██████████| 9/9 [00:00<00:00, 30.39it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.16it/s]100%|██████████| 9/9 [00:00<00:00, 49.96it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.35it/s]100%|██████████| 9/9 [00:00<00:00, 49.88it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.94it/s]100%|██████████| 9/9 [00:00<00:00, 49.46it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.90it/s]100%|██████████| 9/9 [00:00<00:00, 49.87it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.73it/s]100%|██████████| 9/9 [00:00<00:00, 49.79it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 45.66it/s]100%|██████████| 9/9 [00:00<00:00, 48.54it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.16it/s]100%|██████████| 9/9 [00:00<00:00, 49.15it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.05it/s]100%|██████████| 9/9 [00:00<00:00, 30.59it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.73it/s]100%|██████████| 9/9 [00:00<00:00, 49.50it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.92it/s]100%|██████████| 9/9 [00:00<00:00, 49.60it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.56it/s]100%|██████████| 9/9 [00:00<00:00, 49.36it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.99it/s]100%|██████████| 9/9 [00:00<00:00, 49.62it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.87it/s]100%|██████████| 9/9 [00:00<00:00, 49.68it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.97it/s]100%|██████████| 9/9 [00:00<00:00, 49.69it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.42it/s]100%|██████████| 9/9 [00:00<00:00, 48.37it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 22.49it/s]100%|██████████| 9/9 [00:00<00:00, 30.24it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.20it/s]100%|██████████| 9/9 [00:00<00:00, 50.23it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.92it/s]100%|██████████| 9/9 [00:00<00:00, 49.70it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.17it/s]100%|██████████| 9/9 [00:00<00:00, 50.07it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.79it/s]100%|██████████| 9/9 [00:00<00:00, 49.87it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.95it/s]100%|██████████| 9/9 [00:00<00:00, 50.46it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.69it/s]100%|██████████| 9/9 [00:00<00:00, 49.61it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.64it/s]100%|██████████| 9/9 [00:00<00:00, 49.36it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.89it/s]100%|██████████| 9/9 [00:00<00:00, 30.35it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.69it/s]100%|██████████| 9/9 [00:00<00:00, 49.44it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.90it/s]100%|██████████| 9/9 [00:00<00:00, 49.55it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.30it/s]100%|██████████| 9/9 [00:00<00:00, 50.28it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 45.65it/s]100%|██████████| 9/9 [00:00<00:00, 49.22it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.08it/s]100%|██████████| 9/9 [00:00<00:00, 50.06it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.31it/s]100%|██████████| 9/9 [00:00<00:00, 49.71it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 48.04it/s]100%|██████████| 9/9 [00:00<00:00, 50.43it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.36it/s]100%|██████████| 9/9 [00:00<00:00, 49.91it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 33%|███▎      | 3/9 [00:00<00:00, 16.76it/s] 89%|████████▉ | 8/9 [00:00<00:00, 30.71it/s]100%|██████████| 9/9 [00:00<00:00, 30.40it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.90it/s]100%|██████████| 9/9 [00:00<00:00, 49.85it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.92it/s]100%|██████████| 9/9 [00:00<00:00, 49.66it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.48it/s]100%|██████████| 9/9 [00:00<00:00, 50.20it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.33it/s]100%|██████████| 9/9 [00:00<00:00, 50.26it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.23it/s]100%|██████████| 9/9 [00:00<00:00, 50.11it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.66it/s]100%|██████████| 9/9 [00:00<00:00, 49.45it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.94it/s]100%|██████████| 9/9 [00:00<00:00, 49.86it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.94it/s]100%|██████████| 9/9 [00:00<00:00, 30.62it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.71it/s]100%|██████████| 9/9 [00:00<00:00, 49.63it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.80it/s]100%|██████████| 9/9 [00:00<00:00, 49.55it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.37it/s]100%|██████████| 9/9 [00:00<00:00, 50.39it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.73it/s]100%|██████████| 9/9 [00:00<00:00, 49.44it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.67it/s]100%|██████████| 9/9 [00:00<00:00, 49.74it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.07it/s]100%|██████████| 9/9 [00:00<00:00, 49.69it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.58it/s]100%|██████████| 9/9 [00:00<00:00, 49.35it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.69it/s]100%|██████████| 9/9 [00:00<00:00, 49.47it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:00<00:01,  7.33it/s] 67%|██████▋   | 6/9 [00:00<00:00, 28.18it/s]100%|██████████| 9/9 [00:00<00:00, 30.30it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.95it/s]100%|██████████| 9/9 [00:00<00:00, 49.85it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.73it/s]100%|██████████| 9/9 [00:00<00:00, 49.51it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.16it/s]100%|██████████| 9/9 [00:00<00:00, 49.82it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.81it/s]100%|██████████| 9/9 [00:00<00:00, 48.87it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.56it/s]100%|██████████| 9/9 [00:00<00:00, 49.37it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.86it/s]100%|██████████| 9/9 [00:00<00:00, 49.59it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.55it/s]100%|██████████| 9/9 [00:00<00:00, 49.42it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 44%|████▍     | 4/9 [00:00<00:00, 20.20it/s]100%|██████████| 9/9 [00:00<00:00, 30.18it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.56it/s]100%|██████████| 9/9 [00:00<00:00, 49.36it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.06it/s]100%|██████████| 9/9 [00:00<00:00, 48.21it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.76it/s]100%|██████████| 9/9 [00:00<00:00, 49.57it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.80it/s]100%|██████████| 9/9 [00:00<00:00, 49.46it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 47.08it/s]100%|██████████| 9/9 [00:00<00:00, 49.71it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.73it/s]100%|██████████| 9/9 [00:00<00:00, 49.67it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.68it/s]100%|██████████| 9/9 [00:00<00:00, 49.37it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.70it/s]100%|██████████| 9/9 [00:00<00:00, 30.30it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.69it/s]100%|██████████| 9/9 [00:00<00:00, 49.42it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.40it/s]100%|██████████| 9/9 [00:00<00:00, 49.31it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.67it/s]100%|██████████| 9/9 [00:00<00:00, 49.60it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.32it/s]100%|██████████| 9/9 [00:00<00:00, 49.33it/s]
+  0%|          | 0/9 [00:00<?, ?it/s] 56%|█████▌    | 5/9 [00:00<00:00, 46.70it/s]100%|██████████| 9/9 [00:00<00:00, 49.88it/s]
+  0%|          | 0/9 [00:00<?, ?it/s]You seem to be using the pipelines sequentially on GPU. In order to maximize efficiency please use a dataset
+[2025-11-07T22:53:38.013] error: *** JOB 38338489 ON sg013 CANCELLED AT 2025-11-07T22:53:38 DUE TO TIME LIMIT ***

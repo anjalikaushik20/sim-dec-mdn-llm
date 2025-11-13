@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from tools.logger import info
 from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
+from models.llm_model import LLMValueNetwork
 
 class CB_Session(object):
     def __init__(self, env, model, dataset):
@@ -44,6 +45,8 @@ class CB_Session(object):
         self.avg_profit = dataset.avg_profit
         self.test_rec_loss = 99999
         self.scaler = StandardScaler()
+        self.init_value_network()
+        self._ensure_scaler_fitted()
         self.best_p = 0
         self.best_o = 0
         self.best_pmp1 = 0
@@ -53,18 +56,37 @@ class CB_Session(object):
         self.min_profit, self.max_profit = float('inf'), float('-inf')
         self.min_on_time, self.max_on_time = float('inf'), float('-inf')
 
-    def init_value_network(self, value_network):
-        self.value_network = value_network
-        params = list(self.value_network.parameters())
-
-        if len(params) > 0:
-            self.optimizer_dm = torch.optim.Adam(
-                [{'params': params, 'lr': self.env.args.dm_lr}],
-                weight_decay=self.env.args.dm_decay_coeff
-            )
+    def _ensure_scaler_fitted(self):
+        # pick the same feature slice that VN uses
+        feature_dim = getattr(self.model, "feature_dim", self.train_inputs.shape[1])
+        try:
+            check_is_fitted(self.scaler)
+        except Exception:
+            # train_inputs is typically a numpy array already; if torch, convert
+            import numpy as np, torch
+            X = self.train_inputs
+            if isinstance(X, torch.Tensor):
+                X = X.detach().cpu().numpy()
+            self.scaler.fit(X[:, :feature_dim])
+    
+    def init_value_network(self, value_network=None):
+        # allow an external value_network but default to our LLM wrapper
+        if value_network is None:
+            model_name = getattr(self.env.args, "llm_name", "google/gemma-3-1b-it")
+            batch_size = getattr(self.env.args, "batch_size", 32)
+            self.value_network = LLMValueNetwork(self.env, model_name=model_name, batch_size=batch_size)
+            info(f"Initialized LLMValueNetwork: {model_name} (batch={batch_size})")
         else:
-            self.optimizer_dm = None
+            self.value_network = value_network
+            info("Initialized value network from provided instance.")
 
+        # LLM is frozen / eval-only
+        self.value_network.eval()
+        for p in self.value_network.parameters():
+            p.requires_grad = False
+
+        # no optimizer for the decision-maker when using LLM
+        self.optimizer_dm = None
 
     def train_epoch(self):
         t = time.time()
@@ -147,298 +169,164 @@ class CB_Session(object):
 
 
         
+    # Disable decision-maker training since the LLM is frozen.
     def dm_train_epoch(self):
-        t = time.time()
-        self.model.train()
-        self.value_network.train()
-        self.total_epoch += 1
-
-        all_mi_loss = AverageMeter()
-
-        all_ma_loss = AverageMeter()
-        all_profit = AverageMeter()
-        all_on_time = AverageMeter()
-
-        all_profit_loss = AverageMeter()
-        all_late_loss = AverageMeter()
-        all_loss = AverageMeter()
-
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
-
-        self.cost_dic_data = self.cost_dic[:, :-1] 
-        self.cost_dic_y = self.cost_dic[:, -1] 
-
-        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1]) 
-        index.add(self.cost_dic_data)
-
-        for param in self.model.parameters():
-            param.requires_grad = False
-
-        for input_id in tqdm(self.loader):
-
-            ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
-            input_id = torch.FloatTensor(input_id).to(self.env.device)
-            state = input_id[:, :feature_dim]
-
-
-            decision_prob_value = F.softmax(self.value_network(state), dim=1)  
-            decision_prob = F.gumbel_softmax(decision_prob_value, tau=1, hard=True)
-            
-
-
-            selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-            predicted_tokens = self.model(input_id[:,:feature_dim], selected_embedding, ori_input[:,feature_dim+1:])
-        
-
-            profits = torch.tensor(self.avg_profit)
-            weights = profits / profits.max()
-
-            target_class_decision = torch.argmax(profits).expand(decision_prob.size(0)).to(self.env.device)
-
-            decision_weights = weights.to(self.env.device)
-
-            profit_loss = F.cross_entropy(decision_prob, target_class_decision, weight=decision_weights)
-
-            target_class_predicted = torch.ones(predicted_tokens[-1].size(0), dtype=torch.long).to(self.env.device)
-
-            late_loss = F.cross_entropy(predicted_tokens[-1], target_class_predicted)
-
-            mi_loss = self.env.args.mip_coeff * profit_loss + self.env.args.mil_coeff * late_loss
-            
-            all_profit_loss.update(self.env.args.mip_coeff * profit_loss)
-            all_late_loss.update(self.env.args.mil_coeff * late_loss)
-
-            action = decision_prob.argmax(dim=1).squeeze() 
-
-            query_vectors = np.array([
-                [
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][0]].cpu().item(),
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][1]].cpu().item(),
-                    action[i].item()
-                ]
-                for i in range(len(state))
-            ], dtype='float32')
-
-            _, nearest_indices = index.search(query_vectors, 1)  
-            nearest_samples = self.cost_dic_data[nearest_indices.flatten()].cpu().numpy()  
-
-            action_profit_sum = torch.zeros(self.action_dim, device=self.env.device)  
-            action_profit_count = torch.zeros(self.action_dim, device=self.env.device) 
-            action_on_time_sum = torch.zeros(self.action_dim, device=self.env.device) 
-            action_on_time_count = torch.zeros(self.action_dim, device=self.env.device) 
-
-            query_vectors_tensor = torch.tensor(query_vectors, device=self.env.device) 
-            nearest_samples_tensor = torch.tensor(nearest_samples, device=self.env.device)
-
-            matches = torch.all(query_vectors_tensor == nearest_samples_tensor, dim=1)  
-
-            selected_y = torch.where(
-                matches,
-                self.cost_dic_y[nearest_indices.flatten()].to(self.env.device),
-                torch.tensor(self.avg_profit, device=self.env.device)[action]
-            )
-
-            one_hot_action = F.one_hot(action, num_classes=self.action_dim).float()
-            action_profit_sum = torch.matmul(one_hot_action.T, selected_y.unsqueeze(1)).squeeze(1) 
-            action_profit_count = one_hot_action.sum(dim=0) 
-
-            on_time = predicted_tokens[-1].argmax(dim=1) 
-            action_on_time_sum = torch.matmul(one_hot_action.T, on_time.unsqueeze(1).float()).squeeze(1) 
-            action_on_time_count = action_profit_count 
-
-            avg_profit_per_action = action_profit_sum / (action_profit_count + 1e-8) 
-            avg_on_time_per_action = action_on_time_sum / (action_on_time_count + 1e-8)  
-
-            reward_per_action =  avg_profit_per_action + self.env.args.otr_reward_coeff * avg_on_time_per_action 
-
-
-            self.optimizer_dm.zero_grad()
-
-            if not hasattr(self, 'smoothed_reward'):
-                self.smoothed_reward = reward_per_action
-
-            batch_size = state.shape[0]
-
-            self.smoothed_reward =  self.env.args.reward_smoothing_factor * reward_per_action + \
-                (1 - self.env.args.reward_smoothing_factor) * self.smoothed_reward
-
-            predicted_rewards = self.value_network(state).mean(dim=0)
-
-            if self.optimizer_dm is None:
-                ma_loss = torch.tensor(0.0, device=self.env.device)
-                loss = self.env.args.mi_coeff * mi_loss
-            else:
-                ma_loss = F.mse_loss(predicted_rewards, self.smoothed_reward)
-                loss = self.env.args.mi_coeff * mi_loss + self.env.args.ma_coeff * ma_loss
-
-                self.optimizer_dm.zero_grad()
-                loss.backward()
-                self.optimizer_dm.step()
-
-
-            all_mi_loss.update(self.env.args.mi_coeff * mi_loss)
-            all_ma_loss.update(self.env.args.ma_coeff * ma_loss)
-            all_loss.update(loss, len(input_id))
-           
-
-        return all_loss.avg, all_profit_loss.avg, all_late_loss.avg, all_profit.avg, all_on_time.avg, all_mi_loss.avg, all_ma_loss.avg, time.time() - t
-
+        info("dm_train_epoch skipped (LLM value network is frozen).")
+        return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     
 
     def dm_train(self):
-        self.early_stop = 0
-
-        for epoch in range(self.env.args.dm_epochs):
-
-            loss, profit_loss, late_loss, profit_r, on_time_r, mi_loss, ma_loss, train_time = self.dm_train_epoch()
-            info('-' * 50)
-            info(
-                f'TRAIN:epoch = {epoch}/{self.env.args.dm_epochs} loss = {loss:.5f} profit_loss = {profit_loss:.5f} late_loss = {late_loss:.5f} train_time = {train_time:.2f}')
-            info(
-                f'profit = {profit_r:.5f} on_time = {on_time_r:.5f} mi_loss = {mi_loss:.5f} ma_loss = {ma_loss:.5f}')
-            if self.env.args.wandb:
-                wandb.log({"loss/loss":loss}, self.env.args.epochs + 1 + epoch)
-
-                wandb.log({"loss/profit_loss":profit_loss}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/late_loss":late_loss}, self.env.args.epochs + 1 + epoch)
-
-                wandb.log({"loss/profit":profit_r}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/on_time":on_time_r}, self.env.args.epochs + 1 + epoch)
-
-                wandb.log({"loss/mi_loss":mi_loss}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/ma_loss":ma_loss}, self.env.args.epochs + 1 + epoch)
-
-            if epoch % self.env.args.eva_interval == 0:
-                self.early_stop += 1
-                profit, on_time_ratio, profit_min_percent, val_time = self.dm_test('val')
-                info('-' * 10)
-                info(
-                    f'avg_profit = {profit:.5f} on_time_ratio = {on_time_ratio:.5f} overall = {profit+on_time_ratio:.5f} val_time = {val_time:.2f}')
-                info(f'profit_min_percent_10 = {profit_min_percent[0.1]:.5f} profit_min_percent_20 = {profit_min_percent[0.2]:.5f} profit_min_percent_30 = {profit_min_percent[0.3]:.5f}')
-    
-                
-                if self.env.args.wandb:
-                        wandb.log({f"eval/avg_profit":profit, 'eval/on_time_ratio':on_time_ratio}, self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/profit_min_percent_10":profit_min_percent[0.1], \
-                                   'eval/profit_min_percent_20':profit_min_percent[0.2], \
-                                    'eval/profit_min_percent_30':profit_min_percent[0.3]}, self.env.args.epochs + 1 + epoch)
-
-                if on_time_ratio + profit > self.best_dm_accuracy:
-                    self.best_dm_accuracy =  on_time_ratio + profit
-                    self.best_p = profit
-                    self.best_o = on_time_ratio
-                    self.best_pmp1 = profit_min_percent[0.1]
-                    self.best_pmp2 = profit_min_percent[0.3]
-                    self.best_pmp3 = profit_min_percent[0.3]
+        info("dm_train skipped (LLM value network is frozen).")
+        return
 
 
-                    if self.env.args.wandb:
-                        wandb.log({f"eval/best_on_time_ratio":on_time_ratio}, self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/best_profit":profit},self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/best_dm_accuracy":self.best_dm_accuracy},self.env.args.epochs + 1 + epoch)
+    def dm_test(self, mode="test"):
+        import numpy as np
+        import torch
+        import torch.nn.functional as F
+        import faiss
+        from tools.logger import info
 
-                    info(f"best_dm_accuracy: {self.best_dm_accuracy:.5f} ")
-
-                    self.early_stop = 0
-                    if self.env.args.save:
-                        self.save_model(self.env.args.epochs + 1 + epoch, 'dm')
-                    self.best_dm_epoch = self.env.args.epochs + 1 + epoch
-                    
-            if self.early_stop > self.env.args.early_stop:
-                break
-
-
-
-
-    def dm_test(self, mode):
-        self.model.eval()  
+        self._ensure_scaler_fitted()
+        self.model.eval()
         self.value_network.eval()
         t = time.time()
 
-        if mode == 'val' or mode == 'ori':
+        # pick inputs
+        if mode in ("val", "ori"):
             input_id = self.val_inputs
         else:
             input_id = self.test_inputs
 
+        # ensure torch tensor for downstream ops
+        if not isinstance(input_id, torch.Tensor):
+            input_id = torch.tensor(input_id, dtype=torch.float32)
         ori_input = input_id.to(self.env.device)
 
-        if mode != 'ori':
-            input_id = self.scaler.transform(input_id)
+        # feature dimension
+        feature_dim = len(
+            feature_list.product_info[self.env.args.dataset]
+            + feature_list.order_info[self.env.args.dataset]
+            + feature_list.customer_info[self.env.args.dataset]
+            + feature_list.shipping_info[self.env.args.dataset]
+        )
 
-        input_id = torch.FloatTensor(input_id).to(self.env.device)
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                        feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset])
+        # scale (on CPU, NumPy), then back to torch on device
+        if mode != "ori":
+            X = input_id.detach().cpu().numpy()
+            X = self.scaler.transform(X)  # <-- sklearn wants numpy
+            input_id = torch.from_numpy(np.asarray(X, dtype=np.float32)).to(self.env.device)
+        else:
+            input_id = ori_input  # already on device
 
-        self.cost_dic_data = self.cost_dic[:, :-1]  
-        self.cost_dic_y = self.cost_dic[:, -1] 
-
-        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])  
-        index.add(self.cost_dic_data) 
-
-        profit_sum = 0 
-        profit_count = 0 
-        time_sum = 0 
-        time_count = 0 
-        local_profits = []
-
+        # state that goes into the LLM
         state = input_id[:, :feature_dim]
 
+        # ---- FAISS setup ----
+        # cost_dic_data: (N, D) float32 numpy contiguous
+        # cost_dic_y: (N,) values (torch or numpy both ok; we'll convert to float when used)
+        if isinstance(self.cost_dic, torch.Tensor):
+            cost_dic_np = self.cost_dic.detach().cpu().numpy()
+        else:
+            cost_dic_np = np.asarray(self.cost_dic)
+        self.cost_dic_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype('float32'))
+        self.cost_dic_y    = cost_dic_np[:, -1]  # keep as numpy for simple indexing
+
+        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])
+        index.add(self.cost_dic_data)
+
+        profit_sum = 0.0
+        profit_count = 0
+        time_sum = 0
+        time_count = 0
+        local_profits = []
+
         with torch.no_grad():
-            if mode == 'ori':
-                decision_indices = input_id[:, feature_dim].long() 
+            if mode == "ori":
+                decision_indices = input_id[:, feature_dim].long()
                 decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
                 decision_prob_value = decision_prob
             else:
+                # --- LLM forward (prove we called it) ---
+                # small one-time log for the first sample
+                _probe_logged = False
+
+                # LLMValueNetwork.forward already loops per-sample.
                 value_network_output = self.value_network(state)
-                decision_prob_value =(F.softmax(value_network_output, dim=1) == F.softmax(value_network_output, dim=1).max(dim=1, keepdim=True).values).float() 
+                if not _probe_logged and value_network_output.shape[0] > 0:
+                    info(f"[LLM] forward invoked. First logits: {value_network_output[0].tolist()}")
+                    _probe_logged = True
+
+                decision_prob_value = (F.softmax(value_network_output, dim=1)
+                                    == F.softmax(value_network_output, dim=1).max(dim=1, keepdim=True).values).float()
                 decision_prob = decision_prob_value
 
-            action = decision_prob_value.argmax(dim=1).squeeze()  
+            action = decision_prob_value.argmax(dim=1).squeeze()
 
-            query_vectors = np.array([
-                [
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][0]].cpu().item(),
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][1]].cpu().item(),
-                    action[i].item()
-                ]
-                for i in range(len(state))
-            ], dtype='float32')
+            # ---- FAISS queries ----
+            # Build (num_samples, 3) float32 numpy query vectors: [feat_i, feat_j, action]
+            ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
+            ori_cpu = ori_input.detach().cpu()
+            query_vectors = np.empty((state.shape[0], 3), dtype='float32')
+            query_vectors[:, 0] = ori_cpu[:, ridx0].numpy()
+            query_vectors[:, 1] = ori_cpu[:, ridx1].numpy()
+            query_vectors[:, 2] = action.detach().cpu().numpy().astype('float32')
 
-            _, nearest_indices = index.search(query_vectors, 1)  
-            nearest_samples = self.cost_dic_data[nearest_indices.flatten()].cpu().numpy() 
+            # search
+            _, nearest_indices = index.search(query_vectors, 1)  # (B,1)
+            nearest_indices = nearest_indices.flatten()
 
-            for idx, (query, nearest) in enumerate(zip(query_vectors, nearest_samples)):
-                if np.array_equal(query, nearest):
-                    selected_y = self.cost_dic_y[nearest_indices[idx, 0]]
+            for i in range(len(query_vectors)):
+                q = query_vectors[i]
+                n = self.cost_dic_data[nearest_indices[i]]
+                if np.array_equal(q, n):
+                    selected_y = self.cost_dic_y[nearest_indices[i]]
+                    # selected_y might be numpy scalar -> convert to float
+                    selected_y = float(selected_y)
                 else:
-                    selected_y = torch.tensor(self.avg_profit)[action[idx].cpu()]
+                    # avg_profit is per-action; ensure it’s indexable and numeric
+                    # action[i] is a tensor on device -> move to cpu int
+                    ai = int(action[i].detach().cpu().item())
+                    # self.avg_profit can be list/np/torch; normalize to float
+                    if isinstance(self.avg_profit, torch.Tensor):
+                        selected_y = float(self.avg_profit[ai].detach().cpu().item())
+                    else:
+                        selected_y = float(self.avg_profit[ai])
 
                 profit_sum += selected_y
                 profit_count += 1
-                local_profits.append(selected_y) 
+                local_profits.append(selected_y)
 
-            sorted_profits = np.sort(local_profits)
+            # ---- time/on-time prediction via your model ----
+            selected_embedding = torch.sum(
+                decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1
+            )
+            predicted_tokens = self.model(
+                input_id[:, :feature_dim],
+                selected_embedding,
+                ori_input[:, feature_dim + 1:]
+            )
+            # Your original logic: last token's argmax==on-time
+            time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
+            time_count += predicted_tokens[-1].shape[0]
 
+        # aggregate metrics
+        profit = (profit_sum / profit_count) if profit_count > 0 else 0.0
+
+        # percentiles on profits
+        if local_profits:
+            sorted_profits = np.sort(np.asarray(local_profits, dtype=np.float32))
             thresholds = [0.1, 0.2, 0.3]
             profit_min_percent = {}
-            for threshold in thresholds:
-                idx = int(threshold * len(sorted_profits))
-                profit_min_percent[threshold] = sorted_profits[idx]
+            for thr in thresholds:
+                idx = max(0, min(len(sorted_profits)-1, int(thr * len(sorted_profits))))
+                profit_min_percent[thr] = float(sorted_profits[idx])
+        else:
+            profit_min_percent = {0.1: 0.0, 0.2: 0.0, 0.3: 0.0}
 
-            selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-
-            predicted_tokens = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
-
-            time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
-            time_count += len(predicted_tokens[-1])
-
-        profit = profit_sum / profit_count if profit_count > 0 else 0
-        on_time_ratio = time_sum / time_count if time_count > 0 else 0
+        on_time_ratio = (time_sum / time_count) if time_count > 0 else 0.0
 
         return profit, on_time_ratio, profit_min_percent, time.time() - t
-
 
 
     def test(self, mode):
@@ -655,4 +543,3 @@ class CB_Session(object):
 
         info = {"profit": profit, "on_time": on_time_ratio}
         return next_state, reward, done, info
-    

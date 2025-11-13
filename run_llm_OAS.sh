@@ -2,8 +2,8 @@
 #SBATCH -A grp_yanjiefu
 #SBATCH -N 1
 #SBATCH -c 4
-#SBATCH -t 0-01:00:00
-#SBATCH -p htc
+#SBATCH -t 0-15:00:00
+#SBATCH -p general
 #SBATCH -q public
 #SBATCH --mem=16G
 #SBATCH --gpus-per-node=1

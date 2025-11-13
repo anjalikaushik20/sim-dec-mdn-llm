@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=10000)
     parser.add_argument('--dm_epochs', type=int, default=6000)
     parser.add_argument('--eva_interval', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=5096)
+    parser.add_argument('--batch_size', type=int, default=64)
 
     parser.add_argument('--early_stop', type=int, default=50)
 
@@ -93,10 +93,10 @@ llm_model = LLMValueNetwork(my_env)
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)
-my_session.init_value_network(llm_model)
+# my_session.init_value_network(llm_model)
 # ---------------------------------------- Main -----------------------------------------------------------
 info('------------------------------------ Main --------------------------------')
-
+my_session.dm_test("test")      # or my_session.test()
 t = time.time()
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     my_session.train()
@@ -107,7 +107,7 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     info(f'best_overall_accuracy {my_session.best_overall_accuracy}')
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
-    my_session.dm_train()
+    # my_session.dm_train()
     info(f'decision_maker training stage cost time: {time.time() - t}')
     info(f'best_dm_accuracy {my_session.best_dm_accuracy}')
     info(f'best_profit {my_session.best_p}')

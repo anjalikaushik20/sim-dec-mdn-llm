@@ -202,6 +202,13 @@ class CB_Session(object):
         if not isinstance(input_id, torch.Tensor):
             input_id = torch.tensor(input_id, dtype=torch.float32)
         ori_input = input_id.to(self.env.device)
+        
+        # Optional: limit evaluation size for faster LLM runs
+        limit = getattr(self.env.args, "dm_eval_limit", None)
+        if limit:
+            input_id = input_id[:int(limit)]
+            ori_input = ori_input[:int(limit)]
+
 
         # feature dimension
         feature_dim = len(

@@ -46,6 +46,7 @@ def parse_args():
     parser.add_argument('--decoder_num_layers', type=int, default=1)
     parser.add_argument('--encoder_num_layers', type=int, default=1)
     # parser.add_argument('--teacher_forcing_ratio', type=float, default=0.5)
+    parser.add_argument('--dm_eval_limit', type=int, default=None)
 
 
     # ----------------------- Regularizer coefficient

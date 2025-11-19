@@ -332,6 +332,25 @@ class CB_Session(object):
             profit_min_percent = {0.1: 0.0, 0.2: 0.0, 0.3: 0.0}
 
         on_time_ratio = (time_sum / time_count) if time_count > 0 else 0.0
+        
+        if profit > self.best_p:
+            self.best_p = profit
+        if on_time_ratio > self.best_o:
+            self.best_o = on_time_ratio
+        self.best_pmp1 = max(self.best_pmp1, profit_min_percent[0.1])
+        self.best_pmp2 = max(self.best_pmp2, profit_min_percent[0.2])
+        self.best_pmp3 = max(self.best_pmp3, profit_min_percent[0.3])
+
+        # (optional) log to wandb if enabled
+        if self.env.args.wandb:
+            import wandb
+            wandb.log({
+                "dm/profit": profit,
+                "dm/on_time": on_time_ratio,
+                "dm/pmp_0.1": profit_min_percent[0.1],
+                "dm/pmp_0.2": profit_min_percent[0.2],
+                "dm/pmp_0.3": profit_min_percent[0.3],
+            })
 
         return profit, on_time_ratio, profit_min_percent, time.time() - t
 

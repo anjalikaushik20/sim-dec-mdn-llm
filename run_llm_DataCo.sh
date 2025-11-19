@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=16G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/DataCo/New/llm_dec.%j.out
-#SBATCH -e output/DataCo/New/llm_dec.%j.err
+#SBATCH -o output/DataCo/LSTM-LLM/lstm_sim_llm_dec.%j.out
+#SBATCH -e output/DataCo/LSTM-LLM/lstm_sim_llm_dec.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 

@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=16G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/GlobalStore/Trainable-LLM/LSTM-LLM/lstm_sim_llm_dec.%j.out
-#SBATCH -e output/GlobalStore/Trainable-LLM/LSTM-LLM/lstm_sim_llm_dec.%j.err
+#SBATCH -o output/DataCo/vanila.%j.out
+#SBATCH -e output/DataCo/vanila.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 
@@ -18,4 +18,4 @@ conda activate simenv
 
 wandb login $WB_LOGIN --relogin
 
-python3 main/cb_main_llm.py --use_gpu 1 --dataset GlobalStore --epochs 6000 --train_mode 0 --wandb 1
+python3 main/cb_main.py --use_gpu 1 --dataset DataCo --epochs 6000 --train_mode 0 --wandb 1

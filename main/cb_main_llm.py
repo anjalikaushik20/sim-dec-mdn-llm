@@ -94,10 +94,9 @@ llm_model = LLMValueNetwork(my_env)
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)
-# my_session.init_value_network(llm_model)
+my_session.init_value_network(llm_model)
 # ---------------------------------------- Main -----------------------------------------------------------
 info('------------------------------------ Main --------------------------------')
-my_session.dm_test("test")      # or my_session.test()
 t = time.time()
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     my_session.train()
@@ -108,7 +107,7 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     info(f'best_overall_accuracy {my_session.best_overall_accuracy}')
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
-    # my_session.dm_train()
+    my_session.dm_train()
     info(f'decision_maker training stage cost time: {time.time() - t}')
     info(f'best_dm_accuracy {my_session.best_dm_accuracy}')
     info(f'best_profit {my_session.best_p}')
@@ -116,4 +115,7 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     info(f'best_pmp_1 {my_session.best_pmp1}')
     info(f'best_pmp_2 {my_session.best_pmp2}') 
     info(f'best_pmp_3 {my_session.best_pmp3}')
-# my_env.close()
+
+my_session.test("test")      # or my_session.test()
+
+my_env.close()

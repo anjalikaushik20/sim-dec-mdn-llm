@@ -16,6 +16,7 @@ from tools.logger import info
 from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
 from models.llm_model import LLMValueNetwork
+from sklearn.utils.validation import check_is_fitted
 
 class CB_Session(object):
     def __init__(self, env, model, dataset):
@@ -70,7 +71,8 @@ class CB_Session(object):
             self.scaler.fit(X[:, :feature_dim])
     
     def init_value_network(self, value_network=None):
-        # allow an external value_network but default to our LLM wrapper
+        # Use provided VN or build one from the new class (which already freezes the backbone
+        # and leaves the small head trainable).
         if value_network is None:
             model_name = getattr(self.env.args, "llm_name", "google/gemma-3-1b-it")
             batch_size = getattr(self.env.args, "batch_size", 32)
@@ -79,15 +81,16 @@ class CB_Session(object):
         else:
             self.value_network = value_network
             info("Initialized value network from provided instance.")
-
-        # LLM is frozen / eval-only
-        self.value_network.eval()
-        for p in self.value_network.parameters():
-            p.requires_grad = False
-
-        # no optimizer for the decision-maker when using LLM
-        self.optimizer_dm = None
-
+        
+        # Create optimizer for the trainable head only
+        trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
+        if not trainable_params:
+            raise RuntimeError("No trainable parameters in value_network. Ensure adapter/cls_head are requires_grad=True.")
+        self.optimizer_dm = torch.optim.Adam(
+            trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
+        )
+        self.value_network.train()
+    
     def train_epoch(self):
         t = time.time()
         self.model.train()
@@ -108,7 +111,7 @@ class CB_Session(object):
             
             
             ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
+            input_id = self.scaler.transform(input_id)
             input_id = torch.FloatTensor(input_id).to(self.env.device)
 
 
@@ -169,15 +172,144 @@ class CB_Session(object):
 
 
         
-    # Disable decision-maker training since the LLM is frozen.
     def dm_train_epoch(self):
-        info("dm_train_epoch skipped (LLM value network is frozen).")
-        return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-    
+        """
+        One REINFORCE step for the (trainable) LLM head.
+        Returns: avg_reward, on_time_mean, profit_mean, loss
+        """
+        import numpy as np
+        import torch
+        import torch.nn.functional as F
+        import faiss
+        from torch.distributions import Categorical
+        from tools import feature_list  # uses your existing registry
+
+        assert self.optimizer_dm is not None, "optimizer_dm is None — create it from the value head's trainable params."
+
+        self.model.eval()             # simulator/readout frozen for policy eval
+        self.value_network.train()    # train the head
+
+        # ----- prepare features -----
+        self._ensure_scaler_fitted()
+        X = self.train_inputs
+        if isinstance(X, torch.Tensor):
+            X = X.detach().cpu().numpy()
+        Xs = self.scaler.transform(X).astype(np.float32)
+        Xs = torch.from_numpy(Xs).to(self.env.device)
+
+        ori = torch.tensor(self.train_inputs, dtype=torch.float32, device=self.env.device)
+
+        feature_dim = len(
+            feature_list.product_info[self.env.args.dataset]
+            + feature_list.order_info[self.env.args.dataset]
+            + feature_list.customer_info[self.env.args.dataset]
+            + feature_list.shipping_info[self.env.args.dataset]
+        )
+        state = Xs[:, :feature_dim]
+
+        # ----- build FAISS index for rewards (profit) -----
+        if isinstance(self.cost_dic, torch.Tensor):
+            cost_dic_np = self.cost_dic.detach().cpu().numpy()
+        else:
+            cost_dic_np = np.asarray(self.cost_dic)
+        cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
+        cost_y = cost_dic_np[:, -1]
+
+        index = faiss.IndexFlatL2(cost_data.shape[1])
+        index.add(cost_data)
+
+        # ----- minibatch -----
+        B = int(min(self.env.args.batch_size, state.shape[0]))
+        idx = torch.randint(0, state.shape[0], (B,), device=self.env.device)
+        s = state[idx]
+        ori_b = ori[idx]
+
+        # ----- policy over 4 actions -----
+        logits = self.value_network(s)           # [B,4]
+        pi = Categorical(logits=logits)
+        a = pi.sample()                          # [B]
+        logp = pi.log_prob(a)                    # [B]
+
+        # ----- reward: profit from cost dict + on-time bonus from simulator -----
+        ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
+        q = torch.stack([ori_b[:, ridx0], ori_b[:, ridx1], a.float()], dim=1)
+        q_np = q.detach().cpu().numpy().astype("float32")
+        _, nn_idx = index.search(q_np, 1)
+        nn_idx = nn_idx.flatten()
+
+        # profit
+        profits = []
+        for i in range(B):
+            target = cost_data[nn_idx[i]]
+            if np.array_equal(q_np[i], target):
+                r = float(cost_y[nn_idx[i]])
+            else:
+                if isinstance(self.avg_profit, torch.Tensor):
+                    r = float(self.avg_profit[a[i]].detach().cpu().item())
+                else:
+                    r = float(np.asarray(self.avg_profit)[a[i].item()])
+            profits.append(r)
+        profit_tensor = torch.tensor(profits, dtype=torch.float32, device=self.env.device)
+
+        # on-time bonus (0/1) via your simulator head
+        with torch.no_grad():
+            onehot = F.one_hot(a, num_classes=4).float()
+            selected_emb = torch.sum(onehot.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
+            pred_tokens = self.model(s, selected_emb, ori_b[:, feature_dim + 1:])
+            on_time = pred_tokens[-1].argmax(dim=1).float()
+
+        total_reward = profit_tensor + self.env.args.otr_reward_coeff * on_time
+
+        # ----- REINFORCE loss with baseline -----
+        baseline = total_reward.mean()
+        loss = -(((total_reward - baseline).detach()) * logp).mean()
+
+        self.optimizer_dm.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
+        self.optimizer_dm.step()
+
+        return float(total_reward.mean().item()), float(on_time.mean().item()), float(profit_tensor.mean().item()), float(loss.item())
+
 
     def dm_train(self):
-        info("dm_train skipped (LLM value network is frozen).")
-        return
+        """
+        Simple training loop for the decision-maker head.
+        Tracks best avg_reward and updates best_* fields for logging.
+        """
+        import time
+        from tools.logger import info
+
+        best_reward = float("-inf")
+        t0 = time.time()
+
+        for epoch in range(self.env.args.ckpt_start_epoch, self.env.args.dm_epochs):
+            avg_r, on_time, prof, loss = self.dm_train_epoch()
+            info(f"[DM] epoch {epoch}/{self.env.args.dm_epochs} "
+                f"reward={avg_r:.4f} profit={prof:.4f} on_time={on_time:.4f} loss={loss:.4f}")
+
+            # optional: wandb
+            if getattr(self.env.args, "wandb", False):
+                try:
+                    import wandb
+                    wandb.log(
+                        {"dm/avg_reward": avg_r, "dm/profit": prof, "dm/on_time": on_time, "dm/loss": loss,
+                        "dm/epoch_time_sec": time.time() - t0},
+                        step=epoch
+                    )
+                except Exception:
+                    pass
+
+            # track bests
+            if avg_r > best_reward:
+                best_reward = avg_r
+                # these fields exist in your logger paths; keep them updated
+                self.best_o = max(getattr(self, "best_o", 0.0), on_time)
+                self.best_p = max(getattr(self, "best_p", 0.0), prof)
+                self.best_dm_epoch = epoch
+
+            t0 = time.time()
+
 
 
     def dm_test(self, mode="test"):
@@ -269,6 +401,13 @@ class CB_Session(object):
                 decision_prob = decision_prob_value
 
             action = decision_prob_value.argmax(dim=1).squeeze()
+            
+            # Decision accuracy vs. ground-truth decisions (column at feature_dim)
+            if mode != "ori":
+                gt_actions = ori_input[:, feature_dim].long()
+                dm_acc = (action == gt_actions).float().mean().item()
+                self.best_dm_accuracy = max(self.best_dm_accuracy, dm_acc)
+                info(f"[DM] decision accuracy: {dm_acc:.4f}")
 
             # ---- FAISS queries ----
             # Build (num_samples, 3) float32 numpy query vectors: [feat_i, feat_j, action]

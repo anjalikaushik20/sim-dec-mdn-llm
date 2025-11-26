@@ -1,49 +1,45 @@
-
-import torch.nn as nn
-import torch.nn.functional as F
-from tools import feature_list
-import torch.nn.init as init
-from transformers import pipeline
 import torch
-from huggingface_hub import login
-
-login(token="HF_TOKEN_PLACEHOLDER")
+import torch.nn as nn
+from transformers import AutoModel, AutoConfig
+from tools import feature_list
 
 class LLMValueNetwork(nn.Module):
-    def __init__(self, env, model_name="google/gemma-3-1b-it"):
-        super(LLMValueNetwork, self).__init__()
+    def __init__(self, env, model_name="google/gemma-3-270m-it", batch_size=64):
+        super().__init__()
         self.env = env
-        self.device = "cuda"
-        self.pipe = pipeline(
-            "text-generation", 
-            model=model_name, 
-            device=0 if self.device == "cuda" else -1, 
-            dtype=torch.bfloat16 if self.device == "cuda" else None,
+        self.batch_size = batch_size
+
+        dataset = self.env.args.dataset
+        self.feature_dim = len(
+            feature_list.product_info[dataset]
+            + feature_list.order_info[dataset]
+            + feature_list.customer_info[dataset]
+            + feature_list.shipping_info[dataset]
         )
 
-    def forward(self, state):
-        outputs = []
-        for sample in state.cpu().numpy().tolist():
-            prompt = self._make_prompt(sample)
-            text = self.pipe(prompt, max_new_tokens=30, return_full_text=False)[0]["generated_text"]
-            # map LLM text output to numeric logits
-            logits = self._parse_output_to_logits(text)
-            outputs.append(logits)
-        return torch.tensor(outputs, device=self.env.device, dtype=torch.float32)
- 
-    def _make_prompt(self, features):
-            return (
-                "You are selecting a shipping mode for an order.\n"
-                "Given the following numerical features from a simulated environment:\n"
-                f"{features}\n"
-                "Predict the preference scores for 4 possible actions (A0, A1, A2, A3). "
-                "Return 4 numbers separated by commas."
-            )
+        dtype = torch.float16 if ("cuda" in str(self.env.device)) else torch.float32
+        cfg = AutoConfig.from_pretrained(model_name)
+        self.backbone = AutoModel.from_pretrained(model_name, torch_dtype=dtype).to(self.env.device)
+        self.backbone.eval()
+        for p in self.backbone.parameters():
+            p.requires_grad = False  # frozen LLM
 
-    def _parse_output_to_logits(self, text):
-        import re
-        nums = re.findall(r"[-+]?\d*\.\d+|\d+", text)
-        if len(nums) < 4:
-            nums = nums + ["0"] * (4 - len(nums))
-        return [float(x) for x in nums[:4]]
- 
+        hidden = self.backbone.config.hidden_size
+
+        # Keep head in float32 for numerics; project to backbone dtype only at the boundary
+        self.adapter = nn.Linear(self.feature_dim, hidden).to(self.env.device, dtype=torch.float32)
+        self.cls_head = nn.Linear(hidden, 4).to(self.env.device, dtype=torch.float32)
+
+    # <-- remove @torch.no_grad() so the head is trainable
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        state32 = state.to(self.env.device, dtype=torch.float32)  # head runs in fp32
+        proj32 = self.adapter(state32)                             # [B, H] fp32
+
+        # Cast only the token fed into the frozen LLM to its dtype
+        inputs_embeds = proj32.to(self.backbone.dtype).unsqueeze(1)  # [B,1,H]
+
+        out = self.backbone(inputs_embeds=inputs_embeds, use_cache=False, return_dict=True)
+        last = out.last_hidden_state[:, -1, :].to(torch.float32)     # back to fp32 for the head
+        logits32 = self.cls_head(last)                                # [B,4] fp32
+
+        return logits32.to(state.dtype)  # keep your original API

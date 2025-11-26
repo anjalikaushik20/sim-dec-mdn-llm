@@ -115,4 +115,6 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     info(f'best_pmp_1 {my_session.best_pmp1}')
     info(f'best_pmp_2 {my_session.best_pmp2}') 
     info(f'best_pmp_3 {my_session.best_pmp3}')
-# my_env.close()
+
+my_session.dm_test("test")
+my_env.close()

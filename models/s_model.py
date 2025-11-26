@@ -75,8 +75,9 @@ class S_SimDec(nn.Module):
         c_out = torch.cat((c_out, c_out4s.unsqueeze(1)), dim=1)
 
         
-        pooled_features = torch.mean(c_input[:, :self.c_num], dim=0, keepdim=True).repeat(c_input.shape[0], 1) 
-        pooled_features = self.pooling_fc(pooled_features)  
+        # pooled_features = torch.mean(c_input[:, :self.c_num], dim=0, keepdim=True).repeat(c_input.shape[0], 1) 
+        # pooled_features = self.pooling_fc(pooled_features)  
+        pooled_features = self.pooling_fc(c_input[:, :self.c_num])
 
         
         if len(shipping_mode.shape) == 1:

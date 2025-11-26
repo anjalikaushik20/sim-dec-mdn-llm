@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 from tools.logger import info
 from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
+from models.llm_model import LLMValueNetwork
+from sklearn.utils.validation import check_is_fitted
 
 class CB_Session(object):
     def __init__(self, env, model, dataset):
@@ -29,7 +31,6 @@ class CB_Session(object):
         self.optimizer = torch.optim.Adam(
             [{'params': filter(lambda p: p.requires_grad, self.model.parameters()), 'lr': self.env.args.lr}], weight_decay=self.env.args.decay_coeff)
         
-
         self.action_dim = 4
         self.epsilon = 0.1
         
@@ -53,53 +54,108 @@ class CB_Session(object):
         self.min_profit, self.max_profit = float('inf'), float('-inf')
         self.min_on_time, self.max_on_time = float('inf'), float('-inf')
 
-    def init_value_network(self, value_network):
-        self.value_network = value_network
-        params = list(self.value_network.parameters())
-
-        if len(params) > 0:
-            self.optimizer_dm = torch.optim.Adam(
-                [{'params': params, 'lr': self.env.args.dm_lr}],
-                weight_decay=self.env.args.dm_decay_coeff
-            )
+    def _ensure_faiss(self):
+        if hasattr(self, "_faiss_ready") and self._faiss_ready:
+            return
+        import numpy as np, faiss, torch
+        # normalize to numpy float32 contiguous once
+        if isinstance(self.cost_dic, torch.Tensor):
+            cost_dic_np = self.cost_dic.detach().cpu().numpy()
         else:
-            self.optimizer_dm = None
+            cost_dic_np = np.asarray(self.cost_dic)
+        self.cost_dic_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
+        self.cost_dic_y    = cost_dic_np[:, -1]
+
+        self.faiss_index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])
+        self.faiss_index.add(self.cost_dic_data)
+        self._faiss_ready = True
+        
+    def _ensure_scaler_fitted(self):
+        feature_dim = getattr(self.model, "feature_dim", self.train_inputs.shape[1])
+        X = self.train_inputs
+        if isinstance(X, torch.Tensor):
+            X = X.detach().cpu().numpy()
+        # fit once if not already done
+        from sklearn.utils.validation import check_is_fitted
+        try:
+            check_is_fitted(self.scaler)
+        except Exception:
+            self.scaler.fit(X[:, :feature_dim])
+        Xs = self.scaler.transform(X).astype(np.float32)
+        self.train_inputs_scaled = torch.from_numpy(Xs).to(self.env.device)
+
+            
+    def init_value_network(self, value_network=None):
+        # Use provided VN or build one from the new class (which already freezes the backbone
+        # and leaves the small head trainable).
+        if value_network is None:
+            model_name = getattr(self.env.args, "llm_name", "google/gemma-3-270m-it")
+            batch_size = getattr(self.env.args, "batch_size", 32)
+            self.value_network = LLMValueNetwork(self.env, model_name=model_name, batch_size=batch_size)
+            info(f"Initialized LLMValueNetwork: {model_name} (batch={batch_size})")
+        else:
+            self.value_network = value_network
+            info("Initialized value network from provided instance.")
+        
+        # Create optimizer for the trainable head only
+        trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
+        if not trainable_params:
+            raise RuntimeError("No trainable parameters in value_network. Ensure adapter/cls_head are requires_grad=True.")
+        self.optimizer_dm = torch.optim.Adam(
+            trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
+        )
+        self.value_network.train()
 
 
     def train_epoch(self):
         t = time.time()
         self.model.train()
         self.total_epoch += 1
-
-        all_rec_loss = AverageMeter()
-        all_kl_loss = AverageMeter()
         all_classification_loss = AverageMeter()
 
-        
+        feature_dim = len(
+            feature_list.product_info[self.env.args.dataset]
+            + feature_list.order_info[self.env.args.dataset]
+            + feature_list.customer_info[self.env.args.dataset]
+            + feature_list.shipping_info[self.env.args.dataset]
+        )
+        label_dim = len(feature_list.label[self.env.args.dataset])  # sequence length T
+        output_dim = 1                                              # MDN predicts 1D per step
 
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
-
-        label_dim =  len(feature_list.label[self.env.args.dataset])
+        self._ensure_scaler_fitted()
 
         for input_id in tqdm(self.loader):
-            
-            
             ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
-            input_id = torch.FloatTensor(input_id).to(self.env.device)
+            input_id = self.scaler.transform(input_id)
+            input_id = torch.as_tensor(input_id, dtype=torch.float32, device=self.env.device)
 
-            # MDN forward pass and loss (align with cb_session MDN head)
-            generated_mdn_params = self.model(input_id[:, :feature_dim], ori_input[:, feature_dim].long(), ori_input[:, feature_dim + 1:])
-            targets = ori_input[:, feature_dim + 1:].float().unsqueeze(-1)
+            # ---- forward through MDN ----
+            generated_mdn_params = self.model(
+                input_id[:, :feature_dim],
+                ori_input[:, feature_dim].long(),
+                ori_input[:, feature_dim + 1 : feature_dim + 1 + label_dim]
+            )
+
+            # ---- targets must be [B, T, D] for compute_loss ----
+            # Get the same slice that defines T (label_dim)
+            targets = (
+                ori_input[:, feature_dim + 1 : feature_dim + 1 + label_dim]  # [B, T]
+                .float()
+                .unsqueeze(-1)  # -> [B, T, 1]
+                .to(self.env.device)
+            )
+
             loss = self.model.compute_loss(targets, generated_mdn_params)
-            
+
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
+
+            all_classification_loss.update(loss.item())
+
         return all_classification_loss.avg, time.time() - t
- 
+
 
 
     def train(self):
@@ -117,7 +173,6 @@ class CB_Session(object):
                 accuracies, val_time = self.test('val')
                 
                 info('-' * 10)
-                
                 
                 for i, accuracy in enumerate(accuracies):
                     info(f"{feature_list.label[self.env.args.dataset][i]} Accuracy: {accuracy * 100:.2f}% val_time = {val_time:.2f}")
@@ -141,319 +196,245 @@ class CB_Session(object):
             if self.early_stop > self.env.args.early_stop:
                 break
 
+    def _mdn_point_predict(self, mus, logpi):
+        """
+        Convert MDN params to a point estimate by selecting the MAP component.
+        mus:   [B, K, D]
+        logpi: [B, K]
+        Returns: y_hat [B, D]
+        """
+        comp = logpi.argmax(dim=-1)  # [B]
+        idx = torch.arange(mus.size(0), device=mus.device)
+        y_hat = mus[idx, comp]       # [B, D]
+        return y_hat
 
-        
     def dm_train_epoch(self):
-        t = time.time()
-        self.model.train()
-        self.value_network.train()
-        self.total_epoch += 1
+        """
+        One REINFORCE step for the (trainable) LLM head.
+        Returns: avg_reward, on_time_mean, profit_mean, loss
+        """
+        import torch
+        from torch.distributions import Categorical
+        from tools import feature_list
 
-        all_mi_loss = AverageMeter()
+        assert self.optimizer_dm is not None, "optimizer_dm is None — create it from the value head's trainable params."
 
-        all_ma_loss = AverageMeter()
-        all_profit = AverageMeter()
-        all_on_time = AverageMeter()
+        # --- setup ---
+        self._ensure_faiss()
+        self._ensure_scaler_fitted()
+        self.model.eval()           # simulator frozen during policy update
+        self.value_network.train()  # train policy head
 
-        all_profit_loss = AverageMeter()
-        all_late_loss = AverageMeter()
-        all_loss = AverageMeter()
+        # --- dims ---
+        dataset = self.env.args.dataset
+        feature_dim = len(
+            feature_list.product_info[dataset]
+            + feature_list.order_info[dataset]
+            + feature_list.customer_info[dataset]
+            + feature_list.shipping_info[dataset]
+        )
+        label_dim = len(feature_list.label[dataset])
 
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                           feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset] )
+        # --- sample one mini-batch ---
+        B = int(min(self.env.args.batch_size, self.train_inputs_scaled.size(0)))
+        idx = torch.randint(0, self.train_inputs_scaled.size(0), (B,), device=self.env.device)
 
-        self.cost_dic_data = self.cost_dic[:, :-1] 
-        self.cost_dic_y = self.cost_dic[:, -1] 
+        # scaled state for policy
+        state_scaled = self.train_inputs_scaled
+        if not isinstance(state_scaled, torch.Tensor):
+            state_scaled = torch.tensor(state_scaled, dtype=torch.float32, device=self.env.device)
+        else:
+            state_scaled = state_scaled.to(self.env.device)
+        state = state_scaled[idx, :feature_dim]  # [B, feature_dim]
 
-        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1]) 
-        index.add(self.cost_dic_data)
+        # original (for labels/targets if needed)
+        if isinstance(self.train_inputs, torch.Tensor):
+            ori_full = self.train_inputs.to(self.env.device)
+        else:
+            ori_full = torch.tensor(self.train_inputs, dtype=torch.float32, device=self.env.device)
+        ori_b = ori_full[idx]
 
-        for param in self.model.parameters():
-            param.requires_grad = False
+        # --- policy forward (micro-batched if large) ---
+        mb = 128
+        logits_chunks = [self.value_network(state[i:i + mb]) for i in range(0, state.size(0), mb)]
+        logits = torch.cat(logits_chunks, dim=0)  # [B, num_actions]
 
-        for input_id in tqdm(self.loader):
+        dist   = Categorical(logits=logits)
+        action = dist.sample()                    # [B]
+        logp   = dist.log_prob(action)            # [B]
 
-            ori_input = input_id.to(self.env.device)
-            input_id = self.scaler.fit_transform(input_id)
-            input_id = torch.FloatTensor(input_id).to(self.env.device)
-            state = input_id[:, :feature_dim]
+        # feed the CHOSEN action into the simulator
+        shipping_mode = action.long()
+        tgt = ori_b[:, feature_dim + 1 : feature_dim + 1 + label_dim]
 
+        # --- run simulator (MDN) ---
+        with torch.no_grad():
+            out = self.model(state, shipping_mode, tgt)
 
-            decision_prob_value = F.softmax(self.value_network(state), dim=1)  
-            decision_prob = F.gumbel_softmax(decision_prob_value, tau=1, hard=True)
-            
+        # Robustly unpack MDN outputs (supports (mus,sig,logpi) or [ ... , (mus,sig,logpi) ])
+        def _unpack_mdn(o):
+            import torch as _torch
+            if isinstance(o, tuple) and len(o) == 3 and all(isinstance(t, _torch.Tensor) for t in o):
+                return o
+            if isinstance(o, (list, tuple)) and len(o) > 0:
+                last = o[-1]
+                if isinstance(last, tuple) and len(last) == 3 and all(isinstance(t, _torch.Tensor) for t in last):
+                    return last
+            raise RuntimeError(f"Unexpected simulator output format: {type(o)}")
 
+        mus_t, sigmas_t, logpi_t = _unpack_mdn(out)  # [B,K,D], [B,K,D], [B,K]
+        D = mus_t.size(-1)
 
-            selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-            # MDN forward (single call)
-            generated_mdn_params = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
-        
+        # --- expected prediction from mixture ---
+        p = torch.softmax(logpi_t, dim=-1)               # [B, K]
+        y_exp = (p.unsqueeze(-1) * mus_t).sum(dim=1)     # [B, D]
 
-            profits = torch.tensor(self.avg_profit)
-            weights = profits / profits.max()
+        if D == 1:
+            # Single scalar output per sample: treat as "on-time score" after sigmoid
+            y_scalar = y_exp.squeeze(-1)                # [B]
+            reward = torch.sigmoid(y_scalar)            # [B] in (0,1)
+            on_time_hat = (reward >= 0.5).float()       # threshold the probability
+        else:
+            # Multi-D fallback: use last dimension as on-time score
+            y_on = y_exp[..., -1]                       # [B]
+            reward = torch.sigmoid(y_on)
+            on_time_hat = (reward >= 0.5).float()
 
-            target_class_decision = torch.argmax(profits).expand(decision_prob.size(0)).to(self.env.device)
+        profit = on_time_hat  # if profit == on_time in your setup
 
-            decision_weights = weights.to(self.env.device)
+        # --- REINFORCE objective ---
+        policy_loss = -(reward.detach() * logp).mean()
 
-            profit_loss = F.cross_entropy(decision_prob, target_class_decision, weight=decision_weights)
+        self.optimizer_dm.zero_grad()
+        policy_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
+        self.optimizer_dm.step()
 
-            # Use MDN loss for lateness component across the label sequence
-            targets = ori_input[:, feature_dim + 1:].float().unsqueeze(-1)
-            late_loss = self.model.compute_loss(targets, generated_mdn_params)
+        return (
+            float(reward.mean().item()),
+            float(on_time_hat.mean().item()),
+            float(profit.mean().item()),
+            float(policy_loss.item()),
+        )
 
-            mi_loss = self.env.args.mip_coeff * profit_loss + self.env.args.mil_coeff * late_loss
-            
-            all_profit_loss.update(self.env.args.mip_coeff * profit_loss)
-            all_late_loss.update(self.env.args.mil_coeff * late_loss)
-
-            action = decision_prob.argmax(dim=1).squeeze() 
-
-            query_vectors = np.array([
-                [
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][0]].cpu().item(),
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][1]].cpu().item(),
-                    action[i].item()
-                ]
-                for i in range(len(state))
-            ], dtype='float32')
-
-            _, nearest_indices = index.search(query_vectors, 1)  
-            nearest_samples = self.cost_dic_data[nearest_indices.flatten()].cpu().numpy()  
-
-            action_profit_sum = torch.zeros(self.action_dim, device=self.env.device)  
-            action_profit_count = torch.zeros(self.action_dim, device=self.env.device) 
-            action_on_time_sum = torch.zeros(self.action_dim, device=self.env.device) 
-            action_on_time_count = torch.zeros(self.action_dim, device=self.env.device) 
-
-            query_vectors_tensor = torch.tensor(query_vectors, device=self.env.device) 
-            nearest_samples_tensor = torch.tensor(nearest_samples, device=self.env.device)
-
-            matches = torch.all(query_vectors_tensor == nearest_samples_tensor, dim=1)  
-
-            selected_y = torch.where(
-                matches,
-                self.cost_dic_y[nearest_indices.flatten()].to(self.env.device),
-                torch.tensor(self.avg_profit, device=self.env.device)[action]
-            )
-
-            one_hot_action = F.one_hot(action, num_classes=self.action_dim).float()
-            action_profit_sum = torch.matmul(one_hot_action.T, selected_y.unsqueeze(1)).squeeze(1) 
-            action_profit_count = one_hot_action.sum(dim=0) 
-
-            # Estimate on_time from MDN last step by selecting the max-weight Gaussian and rounding its mean
-            if generated_mdn_params:
-                mus_last, sigmas_last, logpi_last = generated_mdn_params[-1]
-                sel_g = logpi_last.argmax(dim=-1)
-                gather_idx = sel_g.view(-1, 1, 1).expand(-1, 1, mus_last.size(-1))
-                on_time_pred = mus_last.gather(1, gather_idx).squeeze(1)
-                if on_time_pred.size(-1) == 1:
-                    on_time_pred = on_time_pred.squeeze(-1)
-                on_time = on_time_pred.round().long()
-            else:
-                on_time = torch.zeros(state.size(0), dtype=torch.long, device=self.env.device)
-            action_on_time_sum = torch.matmul(one_hot_action.T, on_time.unsqueeze(1).float()).squeeze(1) 
-            action_on_time_count = action_profit_count 
-
-            avg_profit_per_action = action_profit_sum / (action_profit_count + 1e-8) 
-            avg_on_time_per_action = action_on_time_sum / (action_on_time_count + 1e-8)  
-
-            reward_per_action =  avg_profit_per_action + self.env.args.otr_reward_coeff * avg_on_time_per_action 
-
-
-            if self.optimizer_dm is not None:
-                self.optimizer_dm.zero_grad()
-
-            if not hasattr(self, 'smoothed_reward'):
-                self.smoothed_reward = reward_per_action
-
-            batch_size = state.shape[0]
-
-            self.smoothed_reward =  self.env.args.reward_smoothing_factor * reward_per_action + \
-                (1 - self.env.args.reward_smoothing_factor) * self.smoothed_reward
-
-            predicted_rewards = self.value_network(state).mean(dim=0)
-
-            if self.optimizer_dm is None:
-                ma_loss = torch.tensor(0.0, device=self.env.device)
-                loss = self.env.args.mi_coeff * mi_loss
-            else:
-                ma_loss = F.mse_loss(predicted_rewards, self.smoothed_reward)
-                loss = self.env.args.mi_coeff * mi_loss + self.env.args.ma_coeff * ma_loss
-
-                self.optimizer_dm.zero_grad()
-                loss.backward()
-                self.optimizer_dm.step()
-
-
-            all_mi_loss.update(self.env.args.mi_coeff * mi_loss)
-            all_ma_loss.update(self.env.args.ma_coeff * ma_loss)
-            all_loss.update(loss, len(input_id))
-           
-
-        return all_loss.avg, all_profit_loss.avg, all_late_loss.avg, all_profit.avg, all_on_time.avg, all_mi_loss.avg, all_ma_loss.avg, time.time() - t
-
-    
 
     def dm_train(self):
-        self.early_stop = 0
+        """
+        Simple training loop for the decision-maker head.
+        Tracks best avg_reward and updates best_* fields for logging.
+        """
+        import time
+        from tools.logger import info
 
-        for epoch in range(self.env.args.dm_epochs):
+        best_reward = float("-inf")
+        t0 = time.time()
 
-            loss, profit_loss, late_loss, profit_r, on_time_r, mi_loss, ma_loss, train_time = self.dm_train_epoch()
-            info('-' * 50)
-            info(
-                f'TRAIN:epoch = {epoch}/{self.env.args.dm_epochs} loss = {loss:.5f} profit_loss = {profit_loss:.5f} late_loss = {late_loss:.5f} train_time = {train_time:.2f}')
-            info(
-                f'profit = {profit_r:.5f} on_time = {on_time_r:.5f} mi_loss = {mi_loss:.5f} ma_loss = {ma_loss:.5f}')
-            if self.env.args.wandb:
-                wandb.log({"loss/loss":loss}, self.env.args.epochs + 1 + epoch)
+        for epoch in range(self.env.args.ckpt_start_epoch, self.env.args.dm_epochs):
+            avg_r, on_time, prof, loss = self.dm_train_epoch()
+            info(f"[DM] epoch {epoch}/{self.env.args.dm_epochs} "
+                f"reward={avg_r:.4f} profit={prof:.4f} on_time={on_time:.4f} loss={loss:.4f}")
 
-                wandb.log({"loss/profit_loss":profit_loss}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/late_loss":late_loss}, self.env.args.epochs + 1 + epoch)
+            # optional: wandb
+            if getattr(self.env.args, "wandb", False):
+                try:
+                    import wandb
+                    wandb.log(
+                        {"dm/avg_reward": avg_r, "dm/profit": prof, "dm/on_time": on_time, "dm/loss": loss,
+                        "dm/epoch_time_sec": time.time() - t0},
+                        step=epoch
+                    )
+                except Exception:
+                    pass
 
-                wandb.log({"loss/profit":profit_r}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/on_time":on_time_r}, self.env.args.epochs + 1 + epoch)
+            # track bests
+            if avg_r > best_reward:
+                best_reward = avg_r
+                # these fields exist in your logger paths; keep them updated
+                self.best_o = max(getattr(self, "best_o", 0.0), on_time)
+                self.best_p = max(getattr(self, "best_p", 0.0), prof)
+                self.best_dm_epoch = epoch
 
-                wandb.log({"loss/mi_loss":mi_loss}, self.env.args.epochs + 1 + epoch)
-                wandb.log({"loss/ma_loss":ma_loss}, self.env.args.epochs + 1 + epoch)
-
-            if epoch % self.env.args.eva_interval == 0:
-                self.early_stop += 1
-                profit, on_time_ratio, profit_min_percent, val_time = self.dm_test('val')
-                info('-' * 10)
-                info(
-                    f'avg_profit = {profit:.5f} on_time_ratio = {on_time_ratio:.5f} overall = {profit+on_time_ratio:.5f} val_time = {val_time:.2f}')
-                info(f'profit_min_percent_10 = {profit_min_percent[0.1]:.5f} profit_min_percent_20 = {profit_min_percent[0.2]:.5f} profit_min_percent_30 = {profit_min_percent[0.3]:.5f}')
-    
-                
-                if self.env.args.wandb:
-                        wandb.log({f"eval/avg_profit":profit, 'eval/on_time_ratio':on_time_ratio}, self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/profit_min_percent_10":profit_min_percent[0.1], \
-                                   'eval/profit_min_percent_20':profit_min_percent[0.2], \
-                                    'eval/profit_min_percent_30':profit_min_percent[0.3]}, self.env.args.epochs + 1 + epoch)
-
-                if on_time_ratio + profit > self.best_dm_accuracy:
-                    self.best_dm_accuracy =  on_time_ratio + profit
-                    self.best_p = profit
-                    self.best_o = on_time_ratio
-                    self.best_pmp1 = profit_min_percent[0.1]
-                    self.best_pmp2 = profit_min_percent[0.3]
-                    self.best_pmp3 = profit_min_percent[0.3]
+            t0 = time.time()
 
 
-                    if self.env.args.wandb:
-                        wandb.log({f"eval/best_on_time_ratio":on_time_ratio}, self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/best_profit":profit},self.env.args.epochs + 1 + epoch)
-                        wandb.log({f"eval/best_dm_accuracy":self.best_dm_accuracy},self.env.args.epochs + 1 + epoch)
+    def dm_test(self, mode="test"):
+        import numpy as np
+        import torch
+        import torch.nn.functional as F
+        import faiss
+        from tools.logger import info
+        import time
+        from tools import feature_list
 
-                    info(f"best_dm_accuracy: {self.best_dm_accuracy:.5f} ")
-
-                    self.early_stop = 0
-                    if self.env.args.save:
-                        self.save_model(self.env.args.epochs + 1 + epoch, 'dm')
-                    self.best_dm_epoch = self.env.args.epochs + 1 + epoch
-                    
-            if self.early_stop > self.env.args.early_stop:
-                break
-
-
-
-
-    def dm_test(self, mode):
-        self.model.eval()  
+        self._ensure_scaler_fitted()
+        self.model.eval()
         self.value_network.eval()
         t = time.time()
 
-        if mode == 'val' or mode == 'ori':
+        # pick inputs
+        if mode in ("val", "ori"):
             input_id = self.val_inputs
         else:
             input_id = self.test_inputs
 
+        # ensure torch tensor on device
+        if not isinstance(input_id, torch.Tensor):
+            input_id = torch.tensor(input_id, dtype=torch.float32)
         ori_input = input_id.to(self.env.device)
 
-        if mode != 'ori':
-            input_id = self.scaler.transform(input_id)
+        # Optional limit
+        limit = getattr(self.env.args, "dm_eval_limit", None)
+        if limit:
+            input_id = input_id[:int(limit)]
+            ori_input = ori_input[:int(limit)]
 
-        input_id = torch.FloatTensor(input_id).to(self.env.device)
-        feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
-                        feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset])
+        # feature/label dims
+        feature_dim = len(
+            feature_list.product_info[self.env.args.dataset]
+            + feature_list.order_info[self.env.args.dataset]
+            + feature_list.customer_info[self.env.args.dataset]
+            + feature_list.shipping_info[self.env.args.dataset]
+        )
+        label_dim = len(feature_list.label[self.env.args.dataset])
 
-        self.cost_dic_data = self.cost_dic[:, :-1]  
-        self.cost_dic_y = self.cost_dic[:, -1] 
+        # scale on CPU, back to device
+        X_cpu = input_id.detach().cpu().numpy()
+        X_np = self.scaler.transform(X_cpu)
+        X = torch.as_tensor(X_np, dtype=torch.float32, device=self.env.device)
+        state = X[:, :feature_dim]
 
-        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])  
-        index.add(self.cost_dic_data) 
-
-        profit_sum = 0 
-        profit_count = 0 
-        time_sum = 0 
-        time_count = 0 
-        local_profits = []
-
-        state = input_id[:, :feature_dim]
-
+        # LLM head -> greedy actions
         with torch.no_grad():
-            if mode == 'ori':
-                decision_indices = input_id[:, feature_dim].long() 
-                decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
-                decision_prob_value = decision_prob
-            else:
-                value_network_output = self.value_network(state)
-                decision_prob_value =(F.softmax(value_network_output, dim=1) == F.softmax(value_network_output, dim=1).max(dim=1, keepdim=True).values).float() 
-                decision_prob = decision_prob_value
+            # micro-batch in case state is big
+            mb = 128
+            outs = []
+            for i in range(0, state.size(0), mb):
+                outs.append(self.value_network(state[i:i+mb]))
+            logits = torch.cat(outs, dim=0)                # [B, A]
+            actions = logits.argmax(dim=-1)                # [B]
 
-            action = decision_prob_value.argmax(dim=1).squeeze()  
+            # prepare simulator inputs
+            shipping_mode = actions.long()
+            tgt = ori_input[:, feature_dim + 1 : feature_dim + 1 + label_dim]
 
-            query_vectors = np.array([
-                [
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][0]].cpu().item(),
-                    ori_input[i, feature_list.retrieva_index[self.env.args.dataset][1]].cpu().item(),
-                    action[i].item()
-                ]
-                for i in range(len(state))
-            ], dtype='float32')
+            # MDN forward (correct signature)
+            # mus, sigmas, logpi = self.model(state, shipping_mode, tgt)
+            generated = self.model(state, shipping_mode, tgt)
+            mus, sigmas, logpi = generated[-1]  # take the last step’s (mus, sigmas, logpi)
 
-            _, nearest_indices = index.search(query_vectors, 1)  
-            nearest_samples = self.cost_dic_data[nearest_indices.flatten()].cpu().numpy() 
+            # point prediction from mixtures
+            comp = logpi.argmax(dim=-1)                    # [B]
+            idx = torch.arange(mus.size(0), device=mus.device)
+            y_hat = mus[idx, comp]                         # [B, D]
 
-            for idx, (query, nearest) in enumerate(zip(query_vectors, nearest_samples)):
-                if np.array_equal(query, nearest):
-                    selected_y = self.cost_dic_y[nearest_indices[idx, 0]]
-                else:
-                    selected_y = torch.tensor(self.avg_profit)[action[idx].cpu()]
+            on_time_hat = (y_hat[..., 0] >= 0.5).float()
+            avg_on_time = on_time_hat.mean().item()
 
-                profit_sum += selected_y
-                profit_count += 1
-                local_profits.append(selected_y) 
-
-            sorted_profits = np.sort(local_profits)
-
-            thresholds = [0.1, 0.2, 0.3]
-            profit_min_percent = {}
-            for threshold in thresholds:
-                idx = int(threshold * len(sorted_profits))
-                profit_min_percent[threshold] = sorted_profits[idx]
-
-            selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-
-            # Use MDN outputs to estimate on-time
-            generated_mdn_params = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
-            if generated_mdn_params:
-                mus, sigmas, logpi = generated_mdn_params[-1]
-                selected_gauss = logpi.argmax(dim=-1)
-                idx = selected_gauss.view(-1, 1, 1).expand(-1, 1, mus.size(-1))
-                on_time_pred = mus.gather(1, idx).squeeze(1)
-                if on_time_pred.size(-1) == 1:
-                    on_time_pred = on_time_pred.squeeze(-1)
-                on_time_pred = on_time_pred.round().long()
-                time_sum += on_time_pred.sum().item()
-                time_count += len(on_time_pred)
-
-        profit = profit_sum / profit_count if profit_count > 0 else 0
-        on_time_ratio = time_sum / time_count if time_count > 0 else 0
-
-        return profit, on_time_ratio, profit_min_percent, time.time() - t
+        return {
+            "on_time_mean": avg_on_time,
+            "time": time.time() - t,
+            "num_samples": state.size(0),
+        }
 
 
 

@@ -29,6 +29,7 @@ class LLMValueNetwork(nn.Module):
         hidden = self.backbone.config.hidden_size
 
         # Keep head in float32 for numerics; project to backbone dtype only at the boundary
+        # Only these two layers are trainable
         self.adapter = nn.Linear(self.feature_dim, hidden).to(self.env.device, dtype=torch.float32)
         self.cls_head = nn.Linear(hidden, 4).to(self.env.device, dtype=torch.float32)
 

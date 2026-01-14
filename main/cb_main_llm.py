@@ -108,13 +108,14 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     my_session.dm_train()
-    info(f'decision_maker training stage cost time: {time.time() - t}')
-    info(f'best_dm_accuracy {my_session.best_dm_accuracy}')
-    info(f'best_profit {my_session.best_p}')
-    info(f'best_on_time {my_session.best_o}')
-    info(f'best_pmp_1 {my_session.best_pmp1}')
-    info(f'best_pmp_2 {my_session.best_pmp2}') 
-    info(f'best_pmp_3 {my_session.best_pmp3}')
+    prof, on_time, pmp, _ = my_session.dm_test("test")
+    print("profit", prof, "on_time", on_time, "pmp", pmp)
+    print("best_dm_accuracy", my_session.best_dm_accuracy)
+    print("best_profit", my_session.best_p)
+    print("best_on_time", my_session.best_o)
+    print("best_pmp_1", my_session.best_pmp1)
+    print("best_pmp_2", my_session.best_pmp2)
+    print("best_pmp_3", my_session.best_pmp3)
 
 my_session.test("test")      # or my_session.test()
 

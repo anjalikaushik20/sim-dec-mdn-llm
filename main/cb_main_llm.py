@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('--encoder_num_layers', type=int, default=1)
     # parser.add_argument('--teacher_forcing_ratio', type=float, default=0.5)
     parser.add_argument('--dm_eval_limit', type=int, default=None)
+    parser.add_argument("--hf_model_name", type=str, default="google/gemma-3-1b-it", help="HuggingFace model name for LLMValueNetwork backbone")
 
 
     # ----------------------- Regularizer coefficient
@@ -87,10 +88,12 @@ my_env.feature_classes = my_loader.feature_classes
 
 # ----------------------------------- Model Init -----------------------------------------------------------
 info('--------------------------------Model Init--------------------------------')
+info(f"hf_model_name arg: {args.hf_model_name}")
 my_model = S_SimDec(my_env)
 if args.ckpt != None:
     my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
-llm_model = LLMValueNetwork(my_env)
+# llm_model = LLMValueNetwork(my_env)
+llm_model = LLMValueNetwork(my_env, model_name=args.hf_model_name)
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)

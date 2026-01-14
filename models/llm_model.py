@@ -5,6 +5,10 @@ import torch.nn as nn
 from transformers import AutoModel, AutoConfig
 from tools import feature_list
 
+# used the following models for experiments:
+# small models:
+# microsoft/Phi-4-mini-instruct, 4B params
+
 class LLMValueNetwork(nn.Module):
     def __init__(self, env, model_name="google/gemma-3-1b-it", batch_size=64):
         super().__init__()

@@ -46,7 +46,7 @@ class CB_Session(object):
         self.avg_profit = dataset.avg_profit
         self.test_rec_loss = 99999
         self.scaler = StandardScaler()
-        self.init_value_network()
+        # self.init_value_network()
         self._ensure_scaler_fitted()
         self.best_p = 0
         self.best_o = 0
@@ -74,13 +74,14 @@ class CB_Session(object):
         # Use provided VN or build one from the new class (which already freezes the backbone
         # and leaves the small head trainable).
         if value_network is None:
-            model_name = getattr(self.env.args, "llm_name", "google/gemma-3-1b-it")
+            model_name = getattr(self.env.args, "hf_model_name", None)
             batch_size = getattr(self.env.args, "batch_size", 32)
             self.value_network = LLMValueNetwork(self.env, model_name=model_name, batch_size=batch_size)
             info(f"Initialized LLMValueNetwork: {model_name} (batch={batch_size})")
         else:
             self.value_network = value_network
-            info("Initialized value network from provided instance.")
+            name = getattr(self.value_network.backbone.config, "_name_or_path", "unknown")
+            info(f"Initialized value network from provided instance: {name}")
         
         # Create optimizer for the trainable head only
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]

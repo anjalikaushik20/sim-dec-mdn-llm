@@ -19,7 +19,7 @@ conda activate simenv
 wandb login $WB_LOGIN --relogin
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/Phi_4/${RUN_ID}"
+BASE_OUT_DIR="output/phi_4/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 # DataCo

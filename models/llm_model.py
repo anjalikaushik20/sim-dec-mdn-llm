@@ -6,10 +6,14 @@ from transformers import AutoModel, AutoConfig
 from tools import feature_list
 
 # used the following models for experiments:
-# google/gemma-3-1b-it, 1B params -> inital experiments
-# google/gemma-2-2b-it, 2B params
+# Qwen/Qwen2.5-1.5B-Instruct, 1.5B params
+# meta-llama/Llama-3.2-1B-Instruct, 1B params - no access
+# google/gemma-3-4b-it, 4B params
 # microsoft/Phi-4-mini-instruct, 4B params
-# meta-llama/Llama-3.1-8B-Instruct, 8B params
+# Qwen/Qwen3-4B-Instruct-2507, 4B params
+# Qwen/Qwen3-1.7B, 1.7B params
+# Qwen/Qwen3-VL-Embedding-8B, 8B params
+# Qwen/Qwen3-30B-A3B-Instruct-2507, 30B params
 
 class LLMValueNetwork(nn.Module):
     def __init__(self, env, model_name="google/gemma-3-1b-it", batch_size=64):

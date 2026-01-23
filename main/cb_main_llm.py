@@ -29,7 +29,9 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.01)
 
     # parser.add_argument('--mi_lr', type=float, default=0.0001)
-    parser.add_argument('--dm_lr', type=float, default=0.01)
+    # parser.add_argument('--dm_lr', type=float, default=0.01)
+    parser.add_argument('--dm_lr_backbone', type=float, default=1e-5)
+    parser.add_argument('--dm_lr_head', type=float, default=1e-3)
 
     parser.add_argument('--epochs', type=int, default=10000)
     parser.add_argument('--dm_epochs', type=int, default=6000)

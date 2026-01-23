@@ -83,14 +83,19 @@ class CB_Session(object):
             name = getattr(self.value_network.backbone.config, "_name_or_path", "unknown")
             info(f"Initialized value network from provided instance: {name}")
         
-        # Create optimizer for the trainable head only
-        trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
-        if not trainable_params:
-            raise RuntimeError("No trainable parameters in value_network. Ensure adapter/cls_head are requires_grad=True.")
-        self.optimizer_dm = torch.optim.Adam(
-            trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
-        )
         self.value_network.train()
+        
+        bb_lr = float(getattr(self.env.args, "dm_lr_backbone", 1e-5))
+        hd_lr = float(getattr(self.env.args, "dm_lr_head", 1e-3))
+        
+        self.optimizer_dm = torch.optim.Adam(
+            [
+                {"params": self.value_network.backbone.parameters(), "lr": bb_lr},          # set dm_lr ~ 1e-5
+                {"params": self.value_network.adapter.parameters(), "lr": hd_lr},    # e.g., 1e-3
+                {"params": self.value_network.cls_head.parameters(), "lr": hd_lr},   # e.g., 1e-3
+            ],
+            weight_decay=self.env.args.dm_decay_coeff,
+        )
     
     def train_epoch(self):
         t = time.time()
@@ -226,7 +231,8 @@ class CB_Session(object):
         ori_b = ori[idx]
 
         # ----- policy over 4 actions -----
-        logits = self.value_network(s)           # [B,4]
+        logits = self.value_network(s).float()   # [B,4] fp32
+        logits = torch.nan_to_num(logits, nan=0.0, posinf=50.0, neginf=-50.0).clamp(-50, 50)
         pi = Categorical(logits=logits)
         a = pi.sample()                          # [B]
         logp = pi.log_prob(a)                    # [B]

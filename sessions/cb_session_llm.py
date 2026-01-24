@@ -179,21 +179,16 @@ class CB_Session(object):
 
         
     def dm_train_epoch(self):
-        """
-        One REINFORCE step for the (trainable) LLM head.
-        Returns: avg_reward, on_time_mean, profit_mean, loss
-        """
         import numpy as np
         import torch
         import torch.nn.functional as F
         import faiss
-        from torch.distributions import Categorical
         from tools import feature_list  # uses your existing registry
 
         assert self.optimizer_dm is not None, "optimizer_dm is None — create it from the value head's trainable params."
 
-        self.model.eval()             # simulator/readout frozen for policy eval
-        self.value_network.train()    # train the head
+        self.model.eval()             # simulator/readout frozen
+        self.value_network.train()    # train the head and the model
 
         # ----- prepare features -----
         self._ensure_scaler_fitted()
@@ -213,77 +208,77 @@ class CB_Session(object):
         )
         state = Xs[:, :feature_dim]
 
-        # ----- build FAISS index for rewards (profit) -----
-        if isinstance(self.cost_dic, torch.Tensor):
-            cost_dic_np = self.cost_dic.detach().cpu().numpy()
-        else:
-            cost_dic_np = np.asarray(self.cost_dic)
-        cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
-        cost_y = cost_dic_np[:, -1]
-
-        index = faiss.IndexFlatL2(cost_data.shape[1])
-        index.add(cost_data)
-
         # ----- minibatch -----
         B = int(min(self.env.args.batch_size, state.shape[0]))
         idx = torch.randint(0, state.shape[0], (B,), device=self.env.device)
         s = state[idx]
         ori_b = ori[idx]
 
-        # ----- policy over 4 actions -----
-        logits = self.value_network(s).float()   # [B,4] fp32
+        # ----- SFT loss (no sampling) -----
+        logits = self.value_network(s).float()  # [B,4] fp32
         logits = torch.nan_to_num(logits, nan=0.0, posinf=50.0, neginf=-50.0).clamp(-50, 50)
-        pi = Categorical(logits=logits)
-        a = pi.sample()                          # [B]
-        logp = pi.log_prob(a)                    # [B]
-
-        # ----- reward: profit from cost dict + on-time bonus from simulator -----
-        ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
-        q = torch.stack([ori_b[:, ridx0], ori_b[:, ridx1], a.float()], dim=1)
-        q_np = q.detach().cpu().numpy().astype("float32")
-        _, nn_idx = index.search(q_np, 1)
-        nn_idx = nn_idx.flatten()
-
-        # profit
-        profits = []
-        for i in range(B):
-            target = cost_data[nn_idx[i]]
-            if np.array_equal(q_np[i], target):
-                r = float(cost_y[nn_idx[i]])
-            else:
-                if isinstance(self.avg_profit, torch.Tensor):
-                    r = float(self.avg_profit[a[i]].detach().cpu().item())
-                else:
-                    r = float(np.asarray(self.avg_profit)[a[i].item()])
-            profits.append(r)
-        profit_tensor = torch.tensor(profits, dtype=torch.float32, device=self.env.device)
-
-        # on-time bonus (0/1) via your simulator head
-        with torch.no_grad():
-            onehot = F.one_hot(a, num_classes=4).float()
-            selected_emb = torch.sum(onehot.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-            pred_tokens = self.model(s, selected_emb, ori_b[:, feature_dim + 1:])
-            on_time = pred_tokens[-1].argmax(dim=1).float()
-
-        total_reward = profit_tensor + self.env.args.otr_reward_coeff * on_time
-
-        # ----- REINFORCE loss with baseline -----
-        baseline = total_reward.mean()
-        loss = -(((total_reward - baseline).detach()) * logp).mean()
-
+        
+        gt_a = ori_b[:, feature_dim].long()  # ground-truth decision
+        loss = F.cross_entropy(logits, gt_a)
+        
         self.optimizer_dm.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
         self.optimizer_dm.step()
+        
+        # ----- metrics: greedy action + reward computation -----
+        with torch.no_grad():
+            action = logits.argmax(dim=1)  # [B]
+
+            # FAISS setup
+            if isinstance(self.cost_dic, torch.Tensor):
+                cost_dic_np = self.cost_dic.detach().cpu().numpy()
+            else:
+                cost_dic_np = np.asarray(self.cost_dic)
+
+            cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
+            cost_y = cost_dic_np[:, -1]
+
+            index = faiss.IndexFlatL2(cost_data.shape[1])
+            index.add(cost_data)
+
+            # build queries: [feat_i, feat_j, action]
+            ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
+            q = torch.stack([ori_b[:, ridx0], ori_b[:, ridx1], action.float()], dim=1)
+            q_np = q.detach().cpu().numpy().astype("float32")
+
+            _, nn_idx = index.search(q_np, 1)
+            nn_idx = nn_idx.reshape(-1)
+
+            profits = np.empty((B,), dtype=np.float32)
+            avg_profit = self.avg_profit.detach().cpu().numpy() if isinstance(self.avg_profit, torch.Tensor) else np.asarray(self.avg_profit)
+
+            for i in range(B):
+                nearest = cost_data[nn_idx[i]]
+                if np.array_equal(q_np[i], nearest):
+                    profits[i] = float(cost_y[nn_idx[i]])
+                else:
+                    profits[i] = float(avg_profit[int(action[i].item())])
+
+            profit_tensor = torch.from_numpy(profits).to(self.env.device)
+
+            # on-time via simulator (same idea as dm_test, but batched)
+            onehot = F.one_hot(action, num_classes=4).float()
+            selected_embedding = torch.sum(onehot.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
+
+            predicted_tokens = self.model(
+                s[:, :feature_dim],
+                selected_embedding,
+                ori_b[:, feature_dim + 1:],
+            )
+            on_time = predicted_tokens[-1].argmax(dim=1).float()
+
+            total_reward = profit_tensor + float(getattr(self.env.args, "otr_reward_coeff", 1.0)) * on_time
+            
 
         return float(total_reward.mean().item()), float(on_time.mean().item()), float(profit_tensor.mean().item()), float(loss.item())
 
 
     def dm_train(self):
-        """
-        Simple training loop for the decision-maker head.
-        Tracks best avg_reward and updates best_* fields for logging.
-        """
         import time
         from tools.logger import info
 
@@ -502,7 +497,6 @@ class CB_Session(object):
 
 
     def test(self, mode):
-
         chunk_size = int(self.env.args.batch_size // 1.5)
         self.model.eval() 
         t = time.time()
@@ -511,8 +505,6 @@ class CB_Session(object):
             input_id = self.val_inputs
         else:
             input_id = self.test_inputs
-
-        
         
         correct_preds = 0  
         total_samples = 0
@@ -526,41 +518,27 @@ class CB_Session(object):
         label_dim =  len(feature_list.label[self.env.args.dataset])
 
         ori_label_value_counts = {j: {} for j in range(label_dim)}
-
         
         label_value_counts = {j: {} for j in range(label_dim)}
         with torch.no_grad():
             
             correct_preds = [0] * label_dim  
             total_samples = [0] * label_dim  
-
             
             for i in range(0, len(input_id), chunk_size):
                 
                 input_chunk = input_id[i:i + chunk_size]
                 ori_chunk = ori_input[i:i + chunk_size]
 
-                
                 for j in range(label_dim):
                     for value in ori_chunk[:, feature_dim + j + 1].cpu().numpy():
                         if value not in ori_label_value_counts[j]:
                             ori_label_value_counts[j][value] = 0
                         ori_label_value_counts[j][value] += 1
-                    
-
-                
+                                    
                 predicted_tokens = self.model(input_chunk[:,:feature_dim], ori_chunk[:,feature_dim].long(), ori_chunk[:,feature_dim+1:])
 
-                
                 class_labels = ori_chunk[:, -label_dim:].long().to(self.env.device)
-
-                
-                
-                
-
-
-
-
                 
                 for j in range(label_dim):
                     predicted = torch.argmax(predicted_tokens[j], dim=1)  
@@ -571,18 +549,9 @@ class CB_Session(object):
                             label_value_counts[j][value] = 0
                         label_value_counts[j][value] += 1
 
-        
         accuracies = [correct_preds[j] / total_samples[j] for j in range(label_dim)]
-        
-        
-        
 
-        
-        
-        
         return accuracies, time.time() - t
-
-
 
     def save_ckpt(self, path):
         torch.save(self.model.state_dict(), path)
@@ -605,19 +574,14 @@ class CB_Session(object):
         with torch.no_grad():
             state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.env.device)
             action_tensor = torch.LongTensor([action]).to(self.env.device)
-
-            
             predicted_tokens = self.forward(state_tensor, action_tensor, state_tensor)
             profit = predicted_tokens[0, 0].item()
             on_time_ratio = predicted_tokens[0, 1].item()
-
         
         reward = profit + self.env.beta * on_time_ratio
-
         
         next_state = None  
 
-        
         self.env.index += 1
         done = self.env.index >= len(self.env.loader.test_inputs)
 
@@ -632,17 +596,14 @@ class CB_Session(object):
         input_id = self.train_inputs
 
         ori_input = input_id.to(self.env.device)
-
-
+        
         input_id = torch.FloatTensor(input_id).to(self.env.device)
         feature_dim = len(feature_list.product_info[self.env.args.dataset] + feature_list.order_info[self.env.args.dataset] +\
                         feature_list.customer_info[self.env.args.dataset] + feature_list.shipping_info[self.env.args.dataset])
 
-        
         self.cost_dic_data = self.cost_dic[:, :-1]  
         self.cost_dic_y = self.cost_dic[:, -1]  
 
-        
         index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])  
         index.add(self.cost_dic_data)  
 
@@ -659,12 +620,8 @@ class CB_Session(object):
             decision_prob_value =(F.softmax(value_network_output, dim=1) == F.softmax(value_network_output, dim=1).max(dim=1, keepdim=True).values).float()  
             decision_prob = decision_prob_value
 
-            
             action = decision_prob_value.argmax(dim=1).squeeze()  
             
-            
-            
-
             query_vectors = np.array([
                 [
                     ori_input[i, feature_list.retrieva_index[self.env.args.dataset][0]].cpu().item(),
@@ -679,7 +636,6 @@ class CB_Session(object):
 
             profit, on_time_ratio, reward = [], [], []
 
-
             for idx, (query, nearest) in enumerate(zip(query_vectors, nearest_samples)):
                 if np.array_equal(query, nearest):
                     selected_y = self.cost_dic_y[nearest_indices[idx, 0]]
@@ -688,19 +644,12 @@ class CB_Session(object):
 
                 profit.append(selected_y)
 
-
-
             selected_embedding = torch.sum(decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
 
             predicted_tokens = self.model(input_id[:, :feature_dim], selected_embedding, ori_input[:, feature_dim + 1:])
-
             
             time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
             time_count += len(predicted_tokens[-1])
-
-
-        
-        
         
         on_time_ratio = predicted_tokens[-1].argmax(dim=1).tolist()
 

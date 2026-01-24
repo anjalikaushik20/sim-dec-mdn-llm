@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=64G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/sft/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
-#SBATCH -e output/sft/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
+#SBATCH -o output/sft/pure/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
+#SBATCH -e output/sft/pure/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 

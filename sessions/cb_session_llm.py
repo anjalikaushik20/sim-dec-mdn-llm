@@ -198,8 +198,13 @@ class CB_Session(object):
         Xs = self.scaler.transform(X).astype(np.float32)
         Xs = torch.from_numpy(Xs).to(self.env.device)
 
-        ori = torch.tensor(self.train_inputs, dtype=torch.float32, device=self.env.device)
-
+        # ori = torch.tensor(self.train_inputs, dtype=torch.float32, device=self.env.device)
+        ori = self.train_inputs
+        if isinstance(ori, torch.Tensor):
+            ori = ori.detach().to(self.env.device, dtype=torch.float32)
+        else:
+            ori = torch.from_numpy(np.asarray(ori, dtype=np.float32)).to(self.env.device)
+        
         feature_dim = len(
             feature_list.product_info[self.env.args.dataset]
             + feature_list.order_info[self.env.args.dataset]

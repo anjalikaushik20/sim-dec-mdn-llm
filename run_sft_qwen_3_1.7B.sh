@@ -5,7 +5,7 @@
 #SBATCH -t 0-04:00:00
 #SBATCH -p htc
 #SBATCH -q public
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --gpus-per-node=1
 #SBATCH -o output/sft/pure/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
 #SBATCH -e output/sft/pure/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
@@ -19,7 +19,7 @@ conda activate simenv
 wandb login $WB_LOGIN --relogin
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/sft/qwen_3_1.7B/${RUN_ID}"
+BASE_OUT_DIR="output/sft/pure/qwen_3_1.7B/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 # DataCo

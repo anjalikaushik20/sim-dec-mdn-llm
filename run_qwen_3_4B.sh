@@ -5,7 +5,7 @@
 #SBATCH -t 0-04:00:00
 #SBATCH -p htc
 #SBATCH -q public
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --gpus-per-node=1
 #SBATCH -o output/qwen_3_4B/lstm_sim_llm_dec.%j.out
 #SBATCH -e output/qwen_3_4B/lstm_sim_llm_dec.%j.err

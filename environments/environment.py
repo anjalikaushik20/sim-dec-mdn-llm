@@ -17,7 +17,8 @@ class Env(object):
         self.DATA_PATH = os.path.join(data_dir, self.args.dataset)
         self.BASE_PATH = os.path.join(self.ROOT_PATH, 'exp_report')
         self.BASE_PATH = os.path.join(self.BASE_PATH, self.args.dataset)
-        self.CKPT_PATH = os.path.join(self.BASE_PATH, 'ckpt')
+        ckpt_dir = getattr(self.args, 'ckpt_dir', None)
+        self.CKPT_PATH = ckpt_dir if ckpt_dir else os.path.join(self.BASE_PATH, 'ckpt')
         self.TEMP_PATH = os.path.join(self.BASE_PATH, 'temp')
         self.reset(args)
         

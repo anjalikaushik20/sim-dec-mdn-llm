@@ -70,6 +70,7 @@ def parse_args():
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--save', type=int, default=0)
+    parser.add_argument('--ckpt_dir', type=str, default=None, help='Override checkpoint save directory')
 
     return parser.parse_args()
 

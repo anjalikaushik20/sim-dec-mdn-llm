@@ -22,12 +22,14 @@ class LLMValueNetwork(nn.Module):
         self.batch_size = batch_size
 
         dataset = self.env.args.dataset
-        self.feature_dim = len(
-            feature_list.product_info[dataset]
-            + feature_list.order_info[dataset]
-            + feature_list.customer_info[dataset]
-            + feature_list.shipping_info[dataset]
-        )
+        # Sizes of each feature group in the order they appear in the state vector
+        self.group_dims = [
+            len(feature_list.product_info[dataset]),
+            len(feature_list.order_info[dataset]),
+            len(feature_list.customer_info[dataset]),
+            len(feature_list.shipping_info[dataset]),
+        ]
+        self.feature_dim = sum(self.group_dims)
 
         dtype = torch.float16 if ("cuda" in str(self.env.device)) else torch.float32
         cfg = AutoConfig.from_pretrained(model_name)
@@ -38,21 +40,32 @@ class LLMValueNetwork(nn.Module):
 
         hidden = self.backbone.config.hidden_size
 
-        # Keep head in float32 for numerics; project to backbone dtype only at the boundary
-        # Only these two layers are trainable
-        self.adapter = nn.Linear(self.feature_dim, hidden).to(self.env.device, dtype=torch.float32)
+        # One adapter per feature group; cls_head reads the last token (attends over all 4)
+        # All trainable layers stay in float32 for numerical stability
+        self.adapters = nn.ModuleList([
+            nn.Linear(dim, hidden).to(self.env.device, dtype=torch.float32)
+            for dim in self.group_dims
+        ])
         self.cls_head = nn.Linear(hidden, 4).to(self.env.device, dtype=torch.float32)
 
-    # <-- remove @torch.no_grad() so the head is trainable
     def forward(self, state: torch.Tensor) -> torch.Tensor:
-        state32 = state.to(self.env.device, dtype=torch.float32)  # head runs in fp32
-        proj32 = self.adapter(state32)                             # [B, H] fp32
+        state32 = state.to(self.env.device, dtype=torch.float32)
 
-        # Cast only the token fed into the frozen LLM to its dtype
-        inputs_embeds = proj32.to(self.backbone.dtype).unsqueeze(1)  # [B,1,H]
+        # Split the flat state into per-group slices and project each to hidden dim
+        group_embeds = []
+        offset = 0
+        for adapter, dim in zip(self.adapters, self.group_dims):
+            group_slice = state32[:, offset: offset + dim]   # [B, group_dim]
+            group_embeds.append(adapter(group_slice))         # [B, H]
+            offset += dim
+
+        # Stack into a sequence of 4 tokens so the LLM attends across feature groups
+        token_seq = torch.stack(group_embeds, dim=1)          # [B, 4, H]
+        inputs_embeds = token_seq.to(self.backbone.dtype)     # match frozen backbone dtype
 
         out = self.backbone(inputs_embeds=inputs_embeds, use_cache=False, return_dict=True)
-        last = out.last_hidden_state[:, -1, :].to(torch.float32)     # back to fp32 for the head
-        logits32 = self.cls_head(last)                                # [B,4] fp32
+        # For causal LLMs the last token has attended over all preceding tokens
+        last = out.last_hidden_state[:, -1, :].to(torch.float32)   # [B, H]
+        logits32 = self.cls_head(last)                              # [B, 4]
 
-        return logits32.to(state.dtype)  # keep your original API
+        return logits32.to(state.dtype)

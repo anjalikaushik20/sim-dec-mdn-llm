@@ -22,6 +22,7 @@ _PROMPT_TEMPLATE = (
     "1 - Express Shipping\n"
     "2 - Same-Day Delivery\n"
     "3 - Economy Shipping\n\n"
+    "Think first step-by-step, then provide ONLY the number (0, 1, 2, or 3) of the best shipping mode.\n"
     "Respond with ONLY the number (0, 1, 2, or 3) of the best shipping mode.\n"
     "Do not explain. Do not add any other text."
 )

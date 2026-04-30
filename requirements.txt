@@ -4,5 +4,7 @@ numpy
 tqdm
 pandas
 scikit-learn
-transformers
+transformers>=4.51.0
 faiss-cpu
+peft>=0.10.0
+bitsandbytes>=0.43.0

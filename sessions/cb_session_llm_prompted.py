@@ -368,6 +368,7 @@ class CB_Session(object):
 
         # state that goes into the decision maker
         state = input_id[:, :feature_dim]
+        llm_state = ori_input[:, :feature_dim]  # unscaled features for LLM prompting
 
         # ---- FAISS setup ----
         # cost_dic_data: (N, D) float32 numpy contiguous
@@ -398,7 +399,7 @@ class CB_Session(object):
                 # forward() returns a one-hot [B, 4] float tensor directly.
                 _probe_logged = False
 
-                value_network_output = self.value_network.forward(state)
+                value_network_output = self.value_network.forward(llm_state)
                 if not _probe_logged and value_network_output.shape[0] > 0:
                     info(f"[PROMPTED] forward invoked. First one-hot: {value_network_output[0].tolist()}")
                     _probe_logged = True

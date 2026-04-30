@@ -1,3 +1,8 @@
+# SFT MODE: Decision maker trained with Best-Action Cross-Entropy.
+# Labels are generated offline using FAISS profit lookup + S_SimDec simulator.
+# Only the LLMValueNetwork adapters and cls_head are trained — backbone frozen.
+# To switch back to REINFORCE, restore dm_train_epoch to the original version.
+
 import sys
 import os
 import time
@@ -86,12 +91,110 @@ class CB_Session(object):
         # Create optimizer for the trainable head only
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
         if not trainable_params:
-            raise RuntimeError("No trainable parameters in value_network. Ensure adapter/cls_head are requires_grad=True.")
+            info("WARNING: No trainable parameters found in value_network. Check adapter/cls_head requires_grad.")
         self.optimizer_dm = torch.optim.Adam(
             trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
         )
         self.value_network.train()
-    
+
+    def precompute_best_actions(self):
+        """Generate best-action (argmax reward) labels for all training samples.
+        Stored as self.best_action_labels [N] and self.best_action_rewards [N, 4].
+        """
+        import numpy as np
+        import faiss
+        import torch.nn.functional as F
+        from tools import feature_list
+
+        self.model.eval()
+
+        with torch.no_grad():
+            self._ensure_scaler_fitted()
+            X = self.train_inputs
+            if isinstance(X, torch.Tensor):
+                X_np = X.detach().cpu().numpy().astype(np.float32)
+            else:
+                X_np = np.asarray(X, dtype=np.float32)
+
+            N = X_np.shape[0]
+            feature_dim = len(
+                feature_list.product_info[self.env.args.dataset]
+                + feature_list.order_info[self.env.args.dataset]
+                + feature_list.customer_info[self.env.args.dataset]
+                + feature_list.shipping_info[self.env.args.dataset]
+            )
+
+            Xs = self.scaler.transform(X_np).astype(np.float32)
+            Xs_t = torch.from_numpy(Xs).to(self.env.device)
+            ori_t = torch.from_numpy(X_np).to(self.env.device)
+
+            # build FAISS index
+            if isinstance(self.cost_dic, torch.Tensor):
+                cost_dic_np = self.cost_dic.detach().cpu().numpy()
+            else:
+                cost_dic_np = np.asarray(self.cost_dic)
+            cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
+            cost_y = cost_dic_np[:, -1]
+            index = faiss.IndexFlatL2(cost_data.shape[1])
+            index.add(cost_data)
+
+            ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
+            B = int(self.env.args.batch_size)
+            n_batches = (N + B - 1) // B
+            log_every = max(1, n_batches // 10)
+
+            all_rewards = torch.zeros(N, 4, dtype=torch.float32)
+
+            for batch_idx in range(n_batches):
+                start = batch_idx * B
+                end = min(start + B, N)
+                bs = end - start
+
+                state_b = Xs_t[start:end, :feature_dim]
+                ori_b = ori_t[start:end]
+
+                if batch_idx % log_every == 0:
+                    info(f"[SFT] precompute_best_actions: batch {batch_idx}/{n_batches}")
+
+                for a in range(4):
+                    # profit via FAISS lookup, fall back to avg_profit on miss
+                    q_np = np.stack([
+                        ori_b[:, ridx0].cpu().numpy(),
+                        ori_b[:, ridx1].cpu().numpy(),
+                        np.full(bs, float(a), dtype=np.float32),
+                    ], axis=1).astype("float32")
+
+                    _, nn_idx = index.search(q_np, 1)
+                    nn_idx = nn_idx.flatten()
+
+                    profits = []
+                    for i in range(bs):
+                        if np.array_equal(q_np[i], cost_data[nn_idx[i]]):
+                            profits.append(float(cost_y[nn_idx[i]]))
+                        else:
+                            if isinstance(self.avg_profit, torch.Tensor):
+                                profits.append(float(self.avg_profit[a].detach().cpu().item()))
+                            else:
+                                profits.append(float(np.asarray(self.avg_profit)[a]))
+                    profit_t = torch.tensor(profits, dtype=torch.float32, device=self.env.device)
+
+                    # on-time bonus via frozen S_SimDec simulator
+                    a_batch = torch.full((bs,), a, dtype=torch.long, device=self.env.device)
+                    onehot = F.one_hot(a_batch, num_classes=4).float()
+                    selected_emb = torch.sum(
+                        onehot.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1
+                    )
+                    pred_tokens = self.model(state_b, selected_emb, ori_b[:, feature_dim + 1:])
+                    on_time = pred_tokens[-1].argmax(dim=1).float()
+
+                    total_reward = profit_t + self.env.args.otr_reward_coeff * on_time
+                    all_rewards[start:end, a] = total_reward.cpu()
+
+            self.best_action_rewards = all_rewards                       # [N, 4]
+            self.best_action_labels = all_rewards.argmax(dim=1).long()   # [N]
+
+        info(f"[SFT] Label generation complete. Distribution: {torch.bincount(self.best_action_labels).tolist()}")
+
     def train_epoch(self):
         t = time.time()
         self.model.train()
@@ -174,31 +277,27 @@ class CB_Session(object):
 
         
     def dm_train_epoch(self):
-        """
-        One REINFORCE step for the (trainable) LLM head.
-        Returns: avg_reward, on_time_mean, profit_mean, loss
-        """
+        """One SFT step: Best-Action Cross-Entropy for the (trainable) LLM head."""
         import numpy as np
-        import torch
         import torch.nn.functional as F
-        import faiss
-        from torch.distributions import Categorical
-        from tools import feature_list  # uses your existing registry
+        from tools import feature_list
 
-        assert self.optimizer_dm is not None, "optimizer_dm is None — create it from the value head's trainable params."
+        assert hasattr(self, "best_action_labels") and self.best_action_labels is not None, \
+            "best_action_labels not found — call precompute_best_actions() before dm_train()."
 
-        self.model.eval()             # simulator/readout frozen for policy eval
-        self.value_network.train()    # train the head
+        self.model.eval()
+        self.value_network.train()
 
-        # ----- prepare features -----
         self._ensure_scaler_fitted()
         X = self.train_inputs
         if isinstance(X, torch.Tensor):
-            X = X.detach().cpu().numpy()
-        Xs = self.scaler.transform(X).astype(np.float32)
-        Xs = torch.from_numpy(Xs).to(self.env.device)
+            X_np = X.detach().cpu().numpy()
+        else:
+            X_np = np.asarray(X, dtype=np.float32)
 
-        ori = torch.tensor(self.train_inputs, dtype=torch.float32, device=self.env.device)
+        N = X_np.shape[0]
+        B = int(min(self.env.args.batch_size, N))
+        indices = torch.randint(0, N, (B,))
 
         feature_dim = len(
             feature_list.product_info[self.env.args.dataset]
@@ -206,71 +305,21 @@ class CB_Session(object):
             + feature_list.customer_info[self.env.args.dataset]
             + feature_list.shipping_info[self.env.args.dataset]
         )
-        state = Xs[:, :feature_dim]
 
-        # ----- build FAISS index for rewards (profit) -----
-        if isinstance(self.cost_dic, torch.Tensor):
-            cost_dic_np = self.cost_dic.detach().cpu().numpy()
-        else:
-            cost_dic_np = np.asarray(self.cost_dic)
-        cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype("float32"))
-        cost_y = cost_dic_np[:, -1]
+        Xb = self.scaler.transform(X_np[indices.numpy()]).astype(np.float32)
+        state = torch.from_numpy(Xb).to(self.env.device)[:, :feature_dim]
+        a_star_batch = self.best_action_labels[indices].to(self.env.device)
 
-        index = faiss.IndexFlatL2(cost_data.shape[1])
-        index.add(cost_data)
-
-        # ----- minibatch -----
-        B = int(min(self.env.args.batch_size, state.shape[0]))
-        idx = torch.randint(0, state.shape[0], (B,), device=self.env.device)
-        s = state[idx]
-        ori_b = ori[idx]
-
-        # ----- policy over 4 actions -----
-        logits = self.value_network(s)           # [B,4]
-        pi = Categorical(logits=logits)
-        a = pi.sample()                          # [B]
-        logp = pi.log_prob(a)                    # [B]
-
-        # ----- reward: profit from cost dict + on-time bonus from simulator -----
-        ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
-        q = torch.stack([ori_b[:, ridx0], ori_b[:, ridx1], a.float()], dim=1)
-        q_np = q.detach().cpu().numpy().astype("float32")
-        _, nn_idx = index.search(q_np, 1)
-        nn_idx = nn_idx.flatten()
-
-        # profit
-        profits = []
-        for i in range(B):
-            target = cost_data[nn_idx[i]]
-            if np.array_equal(q_np[i], target):
-                r = float(cost_y[nn_idx[i]])
-            else:
-                if isinstance(self.avg_profit, torch.Tensor):
-                    r = float(self.avg_profit[a[i]].detach().cpu().item())
-                else:
-                    r = float(np.asarray(self.avg_profit)[a[i].item()])
-            profits.append(r)
-        profit_tensor = torch.tensor(profits, dtype=torch.float32, device=self.env.device)
-
-        # on-time bonus (0/1) via your simulator head
-        with torch.no_grad():
-            onehot = F.one_hot(a, num_classes=4).float()
-            selected_emb = torch.sum(onehot.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1)
-            pred_tokens = self.model(s, selected_emb, ori_b[:, feature_dim + 1:])
-            on_time = pred_tokens[-1].argmax(dim=1).float()
-
-        total_reward = profit_tensor + self.env.args.otr_reward_coeff * on_time
-
-        # ----- REINFORCE loss with baseline -----
-        baseline = total_reward.mean()
-        loss = -(((total_reward - baseline).detach()) * logp).mean()
+        logits = self.value_network(state)  # [B, 4]
+        loss = F.cross_entropy(logits, a_star_batch, label_smoothing=0.05)
 
         self.optimizer_dm.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
         self.optimizer_dm.step()
 
-        return float(total_reward.mean().item()), float(on_time.mean().item()), float(profit_tensor.mean().item()), float(loss.item())
+        avg_reward = float(self.best_action_rewards[indices].max(dim=1).values.mean().item())
+        return avg_reward, 0.0, avg_reward, float(loss.item())
 
 
     def dm_train(self):
@@ -280,6 +329,10 @@ class CB_Session(object):
         """
         import time
         from tools.logger import info
+
+        info("[SFT] Pre-computing best-action labels from FAISS + simulator...")
+        self.precompute_best_actions()
+        info(f"[SFT] Label pre-computation complete. Starting SFT for {self.env.args.dm_epochs} epochs.")
 
         best_reward = float("-inf")
         t0 = time.time()

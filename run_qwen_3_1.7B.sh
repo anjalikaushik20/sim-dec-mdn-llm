@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=64G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/latest_output/ch0/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
-#SBATCH -e output/latest_output/ch0/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
+#SBATCH -o output/latest_output/training/adaptor/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
+#SBATCH -e output/latest_output/training/adaptor/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 
@@ -19,16 +19,16 @@ conda activate simenv
 wandb login $WB_LOGIN --relogin
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/ch0/qwen_3_1.7B/${RUN_ID}"
+BASE_OUT_DIR="output/latest_output/training/adaptor/qwen_3_1.7B/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 # DataCo
-python3 main/cb_main_llm.py --use_gpu 1 --dataset DataCo --epochs 6000 --train_mode 0 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt_dir "${BASE_OUT_DIR}" > "${BASE_OUT_DIR}/dataco.log" 2>&1 &
+python3 main/cb_main_llm.py --use_gpu 1 --dataset DataCo --train_mode 2 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt exp_report/DataCo/ckpt/gallant-thunder-328_epoch245.pth > "${BASE_OUT_DIR}/dataco.log" 2>&1 &
 
 # GlobalStore
-python3 main/cb_main_llm.py --use_gpu 1 --dataset GlobalStore --epochs 6000 --train_mode 0 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt_dir "${BASE_OUT_DIR}" > "${BASE_OUT_DIR}/globalstore.log" 2>&1 &
+python3 main/cb_main_llm.py --use_gpu 1 --dataset GlobalStore --train_mode 2 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt exp_report/GlobalStore/ckpt/deft-gorge-329_epoch109.pth > "${BASE_OUT_DIR}/globalstore.log" 2>&1 &
 
 # OAS
-python3 main/cb_main_llm.py --use_gpu 1 --dataset OAS --epochs 6000 --train_mode 0 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt_dir "${BASE_OUT_DIR}" > "${BASE_OUT_DIR}/oas.log" 2>&1 &
+python3 main/cb_main_llm.py --use_gpu 1 --dataset OAS --train_mode 2 --wandb 1 --hf_model_name "Qwen/Qwen3-1.7B" --save 1 --ckpt exp_report/OAS/ckpt/wild-salad-315_epoch83.pth > "${BASE_OUT_DIR}/oas.log" 2>&1 &
 
 wait

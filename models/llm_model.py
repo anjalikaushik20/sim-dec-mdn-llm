@@ -48,6 +48,10 @@ class LLMValueNetwork(nn.Module):
         ])
         self.cls_head = nn.Linear(hidden, 4).to(self.env.device, dtype=torch.float32)
 
+        # Inference-only: default to eval mode on construction so BN/dropout are locked.
+        # All forward passes must be wrapped in torch.no_grad() at the call site.
+        self.eval()
+
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         state32 = state.to(self.env.device, dtype=torch.float32)
 

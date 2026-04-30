@@ -29,9 +29,11 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.01)
 
     # parser.add_argument('--mi_lr', type=float, default=0.0001)
+    # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
     parser.add_argument('--dm_lr', type=float, default=0.01)
 
     parser.add_argument('--epochs', type=int, default=10000)
+    # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
     parser.add_argument('--dm_epochs', type=int, default=6000)
     parser.add_argument('--eva_interval', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=64)
@@ -52,6 +54,7 @@ def parse_args():
 
     # ----------------------- Regularizer coefficient
     parser.add_argument('--decay_coeff', type=float, default=0.00001)
+    # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
     parser.add_argument('--dm_decay_coeff', type=float, default=0.0005)
 
     # parser.add_argument('--gl_coeff', type=float, default=1)
@@ -111,7 +114,8 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     info(f'best_overall_accuracy {my_session.best_overall_accuracy}')
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
-    my_session.dm_train()
+    # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
+    # my_session.dm_train()
     prof, on_time, pmp, _ = my_session.dm_test("test")
     print("profit", prof, "on_time", on_time, "pmp", pmp)
     print("best_dm_accuracy", my_session.best_dm_accuracy)

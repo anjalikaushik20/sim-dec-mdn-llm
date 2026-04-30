@@ -7,8 +7,8 @@
 #SBATCH -q public
 #SBATCH --mem=64G
 #SBATCH --gpus-per-node=1
-#SBATCH -o output/latest_output/ch0/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
-#SBATCH -e output/latest_output/ch0/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
+#SBATCH -o output/latest_output/no_training/qwen_3_1.7B/lstm_sim_llm_dec.%j.out
+#SBATCH -e output/latest_output/no_training/qwen_3_1.7B/lstm_sim_llm_dec.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=akaush39@asu.edu
 
@@ -19,7 +19,7 @@ conda activate simenv
 wandb login $WB_LOGIN --relogin
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/ch0/qwen_3_1.7B/${RUN_ID}"
+BASE_OUT_DIR="output/latest_output/no_training/qwen_3_1.7B/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 # DataCo

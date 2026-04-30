@@ -18,6 +18,11 @@ import torch.nn.functional as F
 from models.llm_model import LLMValueNetwork
 from sklearn.utils.validation import check_is_fitted
 
+# DM training (REINFORCE) is currently disabled.
+# The LLMValueNetwork runs in inference-only mode (greedy argmax).
+# To re-enable, remove the early-return guards in dm_train and dm_train_epoch
+# and restore any commented-out optimizer/training calls across the codebase.
+
 class CB_Session(object):
     def __init__(self, env, model, dataset):
         self.env = env
@@ -83,14 +88,16 @@ class CB_Session(object):
             name = getattr(self.value_network.backbone.config, "_name_or_path", "unknown")
             info(f"Initialized value network from provided instance: {name}")
         
-        # Create optimizer for the trainable head only
+        # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
+        # optimizer_dm is not needed in inference-only mode; kept commented for re-enable.
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
         if not trainable_params:
-            raise RuntimeError("No trainable parameters in value_network. Ensure adapter/cls_head are requires_grad=True.")
-        self.optimizer_dm = torch.optim.Adam(
-            trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
-        )
-        self.value_network.train()
+            info("[DM] Warning: no trainable parameters in value_network (expected in inference-only mode).")
+        # self.optimizer_dm = torch.optim.Adam(
+        #     trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
+        # )
+        # torch.no_grad() is enforced at every forward call site; .eval() locks BN/dropout.
+        self.value_network.eval()
     
     def train_epoch(self):
         t = time.time()
@@ -178,6 +185,11 @@ class CB_Session(object):
         One REINFORCE step for the (trainable) LLM head.
         Returns: avg_reward, on_time_mean, profit_mean, loss
         """
+        # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
+        # To re-enable, remove the two lines below.
+        info("[DM] dm_train_epoch is disabled — running in inference-only mode.")
+        return 0.0, 0.0, 0.0, 0.0
+
         import numpy as np
         import torch
         import torch.nn.functional as F
@@ -278,6 +290,11 @@ class CB_Session(object):
         Simple training loop for the decision-maker head.
         Tracks best avg_reward and updates best_* fields for logging.
         """
+        # [INFERENCE-ONLY MODE] DM training disabled — see cb_session_llm.py
+        # To re-enable, remove the two lines below.
+        info("[DM] dm_train is disabled — running in inference-only mode.")
+        return
+
         import time
         from tools.logger import info
 

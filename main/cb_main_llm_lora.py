@@ -6,10 +6,14 @@
 #       --dm_lr 0.0001 --dm_epochs 50 --batch_size 64
 
 import sys
+import os
 import argparse
 import time
 import torch
 import wandb
+
+# Reduce CUDA allocator fragmentation (safe no-op if already set by shell)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 from tools.logger import info
 from environments.environment import Env
 from loaders.s_loader import S_Loader
@@ -116,6 +120,7 @@ info(f"LoRA config: r={args.lora_r}, alpha={args.lora_alpha}, dropout={args.lora
 my_model = S_SimDec(my_env)
 if args.ckpt != None:
     my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
+torch.cuda.empty_cache()
 llm_model = LLMLoRAValueNetwork(
     my_env,
     model_name=args.hf_model_name,
@@ -125,6 +130,7 @@ llm_model = LLMLoRAValueNetwork(
     lora_dropout=args.lora_dropout,
     lora_target_modules=args.lora_target_modules,
 )
+torch.cuda.empty_cache()
 
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')

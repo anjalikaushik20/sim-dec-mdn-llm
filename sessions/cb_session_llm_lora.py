@@ -223,6 +223,7 @@ class CB_Session(object):
             self.best_action_rewards = all_rewards                       # [N, 4]
             self.best_action_labels = all_rewards.argmax(dim=1).long()   # [N]
 
+        torch.cuda.empty_cache()
         info(f"[SFT] Label generation complete. Distribution: {torch.bincount(self.best_action_labels).tolist()}")
 
     def train_epoch(self):
@@ -352,6 +353,7 @@ class CB_Session(object):
         # Clip all trainable value_network params (LoRA + adapters + cls_head) together
         torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
         self.optimizer_dm.step()
+        torch.cuda.empty_cache()
 
         avg_reward = float(self.best_action_rewards[indices].max(dim=1).values.mean().item())
         return avg_reward, 0.0, avg_reward, float(loss.item())

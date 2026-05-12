@@ -47,6 +47,7 @@ class LLMLoRAValueNetwork(nn.Module):
             model_name,
             dtype=dtype,
         ).to(self.env.device)
+        torch.cuda.empty_cache()
 
         hidden = self.backbone.config.hidden_size
 
@@ -76,7 +77,22 @@ class LLMLoRAValueNetwork(nn.Module):
 
         self.backbone = get_peft_model(self.backbone, lora_config)
         self.backbone.print_trainable_parameters()  # log how many params are trainable
+        # Recompute activations during backward instead of storing them — halves activation memory
+        self.backbone.enable_input_require_grads()
+        # use_reentrant=False works correctly in both train and eval/no_grad contexts
+        self.backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         self.backbone.train()
+
+    def train(self, mode: bool = True):
+        """Toggle gradient checkpointing with training mode to avoid CUDA errors in eval."""
+        super().train(mode)
+        if mode:
+            self.backbone.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False}
+            )
+        else:
+            self.backbone.gradient_checkpointing_disable()
+        return self
 
     def _get_lora_target_modules(self, model_name):
         name = model_name.lower()

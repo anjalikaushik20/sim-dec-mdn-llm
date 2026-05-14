@@ -10,6 +10,7 @@ import sys
 import os
 import time
 import random
+from turtle import mode
 import faiss
 import torch
 import wandb
@@ -25,6 +26,8 @@ from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
 from models.llm_model_lora import LLMLoRAValueNetwork
 from sklearn.utils.validation import check_is_fitted
+import torch.nn.functional as F
+from tools import feature_list
 
 class CB_Session(object):
     def __init__(self, env, model, dataset):
@@ -118,6 +121,12 @@ class CB_Session(object):
              'weight_decay': self.env.args.dm_decay_coeff},
         ])
 
+        self.scheduler_dm = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer_dm,
+            T_max=self.env.args.dm_epochs,
+            eta_min=1e-6,
+        )
+
         n_lora = sum(p.numel() for p in lora_params)
         n_adapter = sum(p.numel() for p in adapter_params)
         n_head = sum(p.numel() for p in head_params)
@@ -128,14 +137,15 @@ class CB_Session(object):
         self.value_network.train()
 
     def precompute_best_actions(self):
-        """Generate best-action (argmax reward) labels for all training samples.
-        Stored as self.best_action_labels [N] and self.best_action_rewards [N, 4].
-        """
-        import numpy as np
-        import faiss
-        import torch.nn.functional as F
-        from tools import feature_list
+        """Generate per-action rewards, hard labels, soft labels, and class weights
+        for all training samples.
 
+        Stores:
+        self.best_action_rewards [N, 4]  — normalized combined rewards (fix H)
+        self.best_action_labels  [N]     — argmax (hard) labels
+        self.soft_labels         [N, 4]  — softmax over rewards (fix D, for KL-div)
+        self.class_weights       [4]     — inverse-frequency weights (fix G, for CE)
+        """
         self.model.eval()
 
         with torch.no_grad():
@@ -173,7 +183,9 @@ class CB_Session(object):
             n_batches = (N + B - 1) // B
             log_every = max(1, n_batches // 10)
 
-            all_rewards = torch.zeros(N, 4, dtype=torch.float32)
+            # Store profit and on-time SEPARATELY — needed for fix H (per-stream normalization)
+            all_profits = torch.zeros(N, 4, dtype=torch.float32)
+            all_on_time = torch.zeros(N, 4, dtype=torch.float32)
 
             for batch_idx in range(n_batches):
                 start = batch_idx * B
@@ -217,15 +229,47 @@ class CB_Session(object):
                     pred_tokens = self.model(state_b, selected_emb, ori_b[:, feature_dim + 1:])
                     on_time = pred_tokens[-1].argmax(dim=1).float()
 
-                    total_reward = profit_t + self.env.args.otr_reward_coeff * on_time
-                    all_rewards[start:end, a] = total_reward.cpu()
+                    # Store raw streams, don't combine yet (fix H)
+                    all_profits[start:end, a] = profit_t.cpu()
+                    all_on_time[start:end, a] = on_time.cpu()
 
-            self.best_action_rewards = all_rewards                       # [N, 4]
-            self.best_action_labels = all_rewards.argmax(dim=1).long()   # [N]
+            # ===== normalize each reward stream by its global std before combining =====
+            profit_std = all_profits.std().clamp_min(1e-6)
+            on_time_std = all_on_time.std().clamp_min(1e-6)
+            info(f"[SFT] reward stats — profit_std={profit_std:.4f} "
+                f"on_time_std={on_time_std:.4f}")
+
+            all_rewards = (all_profits / profit_std) + \
+                        self.env.args.otr_reward_coeff * (all_on_time / on_time_std)
+
+            # Guard: NaN in rewards (e.g. simulator crash on a sample) would silently
+            # corrupt soft labels and propagate into every batch — replace with zeros.
+            if torch.isnan(all_rewards).any():
+                n_nan = torch.isnan(all_rewards).sum().item()
+                info(f"[SFT] WARNING: {n_nan} NaN values in reward matrix — replacing with 0")
+                all_rewards = torch.nan_to_num(all_rewards, nan=0.0)
+
+            # Hard labels for logging / fallback CE path
+            self.best_action_rewards = all_rewards                          # [N, 4]
+            self.best_action_labels = all_rewards.argmax(dim=1).long()      # [N]
+
+            # ===== soft reward targets via temperature-scaled softmax =====
+            # Store as log-probabilities so KL can use log_target=True and avoid
+            # the 0 * log(0) = nan that fires when softmax underflows to 0.0
+            temperature = getattr(self.env.args, "soft_label_temp", 1.0)
+            self.log_soft_labels = F.log_softmax(all_rewards / temperature, dim=1)  # [N, 4]
+            self.soft_labels = self.log_soft_labels.exp()                            # [N, 4]
+
+            # ===== inverse-frequency class weights from hard labels =====
+            counts = torch.bincount(self.best_action_labels, minlength=4).float()
+            self.class_weights = (counts.sum() / (4 * counts.clamp_min(1.0))).to(self.env.device)
 
         torch.cuda.empty_cache()
-        info(f"[SFT] Label generation complete. Distribution: {torch.bincount(self.best_action_labels).tolist()}")
-
+        info(f"[SFT] Label distribution: {torch.bincount(self.best_action_labels).tolist()}")
+        info(f"[SFT] Class weights: {self.class_weights.detach().cpu().tolist()}")
+        soft_entropy = -(self.soft_labels * self.soft_labels.clamp_min(1e-9).log()).sum(dim=1).mean().item()
+        info(f"[SFT] Soft label mean entropy: {soft_entropy:.4f} (max for 4 classes = 1.386)")
+    
     def train_epoch(self):
         t = time.time()
         self.model.train()
@@ -273,8 +317,6 @@ class CB_Session(object):
             info('-' * 50)
             info(
                 f'TRAIN:epoch = {epoch}/{self.env.args.epochs} classification_loss = {classification_loss:.5f} train_time = {train_time:.2f}')
-            if self.env.args.wandb:
-                wandb.log({"loss/classification_loss":classification_loss}, epoch)
             self.test('val')
             if epoch % self.env.args.eva_interval == 0:
                 self.early_stop += 1
@@ -282,11 +324,10 @@ class CB_Session(object):
 
                 info('-' * 10)
 
-
+                epoch_metrics = {"loss/classification_loss": classification_loss}
                 for i, accuracy in enumerate(accuracies):
                     info(f"{feature_list.label[self.env.args.dataset][i]} Accuracy: {accuracy * 100:.2f}% val_time = {val_time:.2f}")
-                    if self.env.args.wandb:
-                        wandb.log({f"eval/{feature_list.label[self.env.args.dataset][i]}":accuracy}, epoch)
+                    epoch_metrics[f"eval/{feature_list.label[self.env.args.dataset][i]}"] = accuracy
 
                 if (sum(accuracies) / len(accuracies) if accuracies else 0) > self.best_overall_accuracy:
                     info('-' * 10)
@@ -294,9 +335,11 @@ class CB_Session(object):
                     self.best_acc1 = accuracies[0]
                     self.best_acc2 = accuracies[1]
                     self.best_acc3 = accuracies[2]
-                    if self.env.args.wandb:
-                        wandb.log({f"eval/best_overall_accuracy":self.best_overall_accuracy}, epoch)
+                    epoch_metrics["eval/best_overall_accuracy"] = self.best_overall_accuracy
                     info(f"best_overall_accuracy: {self.best_overall_accuracy * 100:.2f}% ")
+
+                if self.env.args.wandb:
+                    wandb.log(epoch_metrics, step=epoch)
                     self.early_stop = 0
                     if self.env.args.save:
                         self.save_model(epoch, 'sim')
@@ -306,11 +349,8 @@ class CB_Session(object):
                 break
 
 
-
     def dm_train_epoch(self):
-        """One LoRA SFT step: Best-Action Cross-Entropy for backbone (LoRA) + adapters + cls_head."""
-        import numpy as np
-        import torch.nn.functional as F
+        """One LoRA SFT epoch: full shuffled sweep over training data."""
         from tools import feature_list
 
         assert hasattr(self, "best_action_labels") and self.best_action_labels is not None, \
@@ -332,7 +372,6 @@ class CB_Session(object):
 
         N = X_np.shape[0]
         B = int(min(self.env.args.batch_size, N))
-        indices = torch.randint(0, N, (B,))
 
         feature_dim = len(
             feature_list.product_info[self.env.args.dataset]
@@ -341,28 +380,104 @@ class CB_Session(object):
             + feature_list.shipping_info[self.env.args.dataset]
         )
 
-        Xb = self.scaler.transform(X_np[indices.numpy()]).astype(np.float32)
-        state = torch.from_numpy(Xb).to(self.env.device)[:, :feature_dim]
-        a_star_batch = self.best_action_labels[indices].to(self.env.device)
+        # Shuffle indices once per epoch and sweep through the whole dataset
+        perm = torch.randperm(N)
 
-        logits = self.value_network(state)  # [B, 4]
-        loss = F.cross_entropy(logits, a_star_batch, label_smoothing=0.05)
+        total_loss = 0.0
+        total_loss_ce = 0.0
+        total_loss_kl = 0.0
+        total_reward = 0.0
+        total_correct = 0
+        total_samples = 0
+        n_batches = 0
 
-        self.optimizer_dm.zero_grad()
-        loss.backward()
-        # Clip all trainable value_network params (LoRA + adapters + cls_head) together
-        torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
-        self.optimizer_dm.step()
+        nan_detected = False
+
+        for start in range(0, N, B):
+            indices = perm[start:start + B]
+            idx_np = indices.numpy()
+
+            Xb = self.scaler.transform(X_np[idx_np]).astype(np.float32)
+            state = torch.from_numpy(Xb).to(self.env.device)[:, :feature_dim]
+            a_star_batch = self.best_action_labels[indices].to(self.env.device)
+            log_soft_batch = self.log_soft_labels[indices].to(self.env.device)
+
+            logits = self.value_network(state)  # [B, 4]
+
+            # Weighted CE on hard labels corrects for class imbalance
+            loss_ce = F.cross_entropy(logits, a_star_batch, weight=self.class_weights)
+            # KL against log-soft targets; log_target=True avoids 0*log(0)=nan when
+            # softmax underflows to 0 for dominated actions
+            loss_kl = F.kl_div(F.log_softmax(logits, dim=1), log_soft_batch,
+                                reduction='batchmean', log_target=True)
+            loss = 0.5 * loss_ce + 0.5 * loss_kl
+
+            # ---- NaN diagnostics: log offending records before breaking ----
+            if not torch.isfinite(loss):
+                info(f"[NaN] NaN/Inf loss detected — ce={loss_ce.item():.4f} kl={loss_kl.item():.4f} "
+                     f"batch_start={start} batch_size={len(indices)}")
+                info(f"[NaN] state — has_nan={torch.isnan(state).any().item()} "
+                     f"has_inf={torch.isinf(state).any().item()} "
+                     f"min={state.min().item():.4f} max={state.max().item():.4f} "
+                     f"mean={state.mean().item():.4f}")
+                info(f"[NaN] logits — has_nan={torch.isnan(logits).any().item()} "
+                     f"has_inf={torch.isinf(logits).any().item()} "
+                     f"min={logits.min().item():.4f} max={logits.max().item():.4f}")
+                info(f"[NaN] hard labels: {a_star_batch.tolist()}")
+                info(f"[NaN] log_soft_labels — has_nan={torch.isnan(log_soft_batch).any().item()} "
+                     f"has_inf={torch.isinf(log_soft_batch).any().item()}")
+                info(f"[NaN] class_weights: {self.class_weights.tolist()}")
+                # Per-sample breakdown: flag any sample whose state, logits, or soft labels have NaN/Inf
+                bad_state   = torch.isnan(state).any(dim=1) | torch.isinf(state).any(dim=1)
+                bad_logits  = torch.isnan(logits).any(dim=1) | torch.isinf(logits).any(dim=1)
+                bad_soft    = torch.isnan(log_soft_batch).any(dim=1) | torch.isinf(log_soft_batch).any(dim=1)
+                bad_mask    = bad_state | bad_logits | bad_soft
+                if bad_mask.any():
+                    for i in bad_mask.nonzero(as_tuple=True)[0].tolist():
+                        info(f"[NaN]   record idx={idx_np[i]} "
+                             f"state={state[i].tolist()} "
+                             f"logits={logits[i].tolist()} "
+                             f"label={a_star_batch[i].item()} "
+                             f"log_soft={log_soft_batch[i].tolist()} "
+                             f"rewards={self.best_action_rewards[indices[i]].tolist()}")
+                else:
+                    info("[NaN] No individual bad records found — NaN likely from loss aggregation or class_weights.")
+                nan_detected = True
+                break
+
+            self.optimizer_dm.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.value_network.parameters(), 1.0)
+            self.optimizer_dm.step()
+
+            with torch.no_grad():
+                preds = logits.argmax(dim=1)
+                total_correct += (preds == a_star_batch).sum().item()
+                total_samples += a_star_batch.size(0)
+
+            batch_reward = float(self.best_action_rewards[indices].max(dim=1).values.mean().item())
+            total_loss += float(loss.item())
+            total_loss_ce += float(loss_ce.item())
+            total_loss_kl += float(loss_kl.item())
+            total_reward += batch_reward
+            n_batches += 1
+
         torch.cuda.empty_cache()
 
-        avg_reward = float(self.best_action_rewards[indices].max(dim=1).values.mean().item())
-        return avg_reward, 0.0, avg_reward, float(loss.item())
-
+        avg_loss    = total_loss    / max(1, n_batches)
+        avg_loss_ce = total_loss_ce / max(1, n_batches)
+        avg_loss_kl = total_loss_kl / max(1, n_batches)
+        avg_reward  = total_reward  / max(1, n_batches)
+        train_acc   = total_correct / max(1, total_samples)
+        # Signal NaN to dm_train by returning nan for loss
+        if nan_detected:
+            avg_loss = float('nan')
+        return avg_reward, avg_loss_ce, avg_loss_kl, avg_loss, train_acc
 
     def dm_train(self):
         """
         LoRA SFT training loop for the decision-maker.
-        Tracks best avg_reward and saves LoRA checkpoint at end.
+        Validates periodically, tracks best val metrics, saves best checkpoint.
         """
         import time
         from tools.logger import info
@@ -371,51 +486,105 @@ class CB_Session(object):
         self.precompute_best_actions()
         info(f"[LoRA SFT] Label pre-computation complete. Starting SFT for {self.env.args.dm_epochs} epochs.")
 
-        best_reward = float("-inf")
-        t0 = time.time()
+        best_val_score = float("-inf")
+        early_stop_counter = 0
+        eval_every = getattr(self.env.args, "eva_interval", 1)
+        patience = getattr(self.env.args, "early_stop", 10)
+
+        lora_save_path = os.path.join(
+            self.env.CKPT_PATH, f"{self.env.suffix}_lora_best"
+        ) if getattr(self.env.args, "save", False) else None
+
+        # Pre-training baseline so epoch 0 comparison is meaningful
+        pre_profit, pre_on_time, _, _, pre_acc = self.dm_test("val")
+        pre_score = pre_profit + pre_on_time
+        info(f"[LoRA SFT] Pre-training baseline — profit={pre_profit:.4f} "
+             f"on_time={pre_on_time:.4f} score={pre_score:.4f}")
+        best_val_score = pre_score
+        if lora_save_path is not None:
+            self.value_network.save_lora(lora_save_path)
+            info(f"[LoRA SFT] Saved pre-training baseline as initial best checkpoint")
+
+        loss_history = []
 
         for epoch in range(self.env.args.ckpt_start_epoch, self.env.args.dm_epochs):
-            avg_r, on_time, prof, loss = self.dm_train_epoch()
-            info(f"[DM] epoch {epoch}/{self.env.args.dm_epochs} "
-                f"reward={avg_r:.4f} profit={prof:.4f} on_time={on_time:.4f} loss={loss:.4f}")
+            t0 = time.time()
+            avg_r, loss_ce, loss_kl, loss, train_acc = self.dm_train_epoch()
+            train_time = time.time() - t0
+            loss_history.append(loss)
 
-            # optional: wandb
+            info(f"[DM] epoch {epoch}/{self.env.args.dm_epochs} "
+                 f"loss={loss:.4f} (ce={loss_ce:.4f} kl={loss_kl:.4f}) "
+                 f"train_acc={train_acc:.4f} train_time={train_time:.1f}s")
+
+            self.scheduler_dm.step()
+
+            current_lr = self.scheduler_dm.get_last_lr()[0]
+            epoch_metrics = {
+                "dm/loss": loss, "dm/loss_ce": loss_ce, "dm/loss_kl": loss_kl,
+                "dm/train_acc": train_acc, "dm/train_time_sec": train_time, "dm/lr": current_lr,
+            }
+
+            # Abort on NaN loss — detailed diagnostics already printed inside dm_train_epoch
+            if loss != loss:
+                info(f"[LoRA SFT] Stopping at epoch {epoch} due to NaN loss.")
+                break
+
+            if epoch % eval_every == 0:
+                val_profit, val_on_time, val_pmp, val_time, val_acc = self.dm_test("val")
+                val_score = val_profit + val_on_time
+
+                info(f"[DM] val epoch {epoch}: profit={val_profit:.4f} "
+                    f"on_time={val_on_time:.4f} score={val_score:.4f} val_time={val_time:.1f}s")
+
+                epoch_metrics.update({
+                    "val/profit": val_profit, "val/on_time": val_on_time,
+                    "val/score": val_score, "val/pmp_0.1": val_pmp[0.1],
+                    "val/acc": val_acc if val_acc is not None else 0.0,
+                })
+
+                if val_score > best_val_score:
+                    best_val_score = val_score
+                    self.best_dm_epoch = epoch
+                    self.best_p = max(self.best_p, val_profit)
+                    self.best_o = max(self.best_o, val_on_time)
+                    if val_acc is not None:
+                        self.best_dm_accuracy = max(self.best_dm_accuracy, val_acc)
+                    early_stop_counter = 0
+
+                    if lora_save_path is not None:
+                        self.value_network.save_lora(lora_save_path)
+                        info(f"[LoRA SFT] New best val_score={val_score:.4f}, saved to {lora_save_path}")
+                else:
+                    early_stop_counter += 1
+                    info(f"[DM] no improvement ({early_stop_counter}/{patience})")
+
+                if early_stop_counter >= patience:
+                    info(f"[LoRA SFT] Early stopping at epoch {epoch}. "
+                        f"Best val_score={best_val_score:.4f} at epoch {self.best_dm_epoch}.")
+                    break
+
             if getattr(self.env.args, "wandb", False):
                 try:
                     import wandb
-                    wandb.log(
-                        {"dm/avg_reward": avg_r, "dm/profit": prof, "dm/on_time": on_time, "dm/loss": loss,
-                        "dm/epoch_time_sec": time.time() - t0},
-                        step=epoch
-                    )
+                    wandb.log(epoch_metrics, step=epoch)
                 except Exception:
                     pass
 
-            # track bests
-            if avg_r > best_reward:
-                best_reward = avg_r
-                self.best_o = max(getattr(self, "best_o", 0.0), on_time)
-                self.best_p = max(getattr(self, "best_p", 0.0), prof)
-                self.best_dm_epoch = epoch
-
-            t0 = time.time()
-
-        # Save LoRA delta weights after training completes
-        if getattr(self.env.args, "save", False):
-            lora_save_path = os.path.join(
-                self.env.CKPT_PATH, f"{self.env.suffix}_lora_best"
-            )
-            self.value_network.save_lora(lora_save_path)
-            info(f"[LoRA SFT] LoRA weights saved to {lora_save_path}")
-
-
+        if loss_history:
+            lh = np.array(loss_history)
+            finite = lh[np.isfinite(lh)]
+            if finite.size > 0:
+                info(f"[LoRA SFT] Loss summary over {len(lh)} epochs — "
+                     f"initial={lh[0]:.4f}  final={lh[-1]:.4f}  "
+                     f"min={finite.min():.4f} (epoch {int(np.where(np.isfinite(lh))[0][finite.argmin()])})  "
+                     f"max={finite.max():.4f}  mean={finite.mean():.4f}"
+                     + (f"  nan_epochs={int((~np.isfinite(lh)).sum())}" if not np.all(np.isfinite(lh)) else ""))
+            else:
+                info(f"[LoRA SFT] Loss summary: all {len(lh)} epochs produced NaN/Inf loss.")
+        info(f"[LoRA SFT] Training complete. Best val_score={best_val_score:.4f} at epoch {self.best_dm_epoch}.")
 
     def dm_test(self, mode="test"):
-        import numpy as np
-        import torch
-        import torch.nn.functional as F
-        import faiss
-        from tools.logger import info
 
         self._ensure_scaler_fitted()
         self.model.eval()
@@ -428,7 +597,6 @@ class CB_Session(object):
         else:
             input_id = self.test_inputs
 
-        # ensure torch tensor for downstream ops
         if not isinstance(input_id, torch.Tensor):
             input_id = torch.tensor(input_id, dtype=torch.float32)
         ori_input = input_id.to(self.env.device)
@@ -439,8 +607,6 @@ class CB_Session(object):
             input_id = input_id[:int(limit)]
             ori_input = ori_input[:int(limit)]
 
-
-        # feature dimension
         feature_dim = len(
             feature_list.product_info[self.env.args.dataset]
             + feature_list.order_info[self.env.args.dataset]
@@ -448,33 +614,25 @@ class CB_Session(object):
             + feature_list.shipping_info[self.env.args.dataset]
         )
 
-        # scale (on CPU, NumPy), then back to torch on device
         if mode != "ori":
             X = input_id.detach().cpu().numpy()
-            X = self.scaler.transform(X)  # <-- sklearn wants numpy
+            X = self.scaler.transform(X)
             input_id = torch.from_numpy(np.asarray(X, dtype=np.float32)).to(self.env.device)
         else:
-            input_id = ori_input  # already on device
+            input_id = ori_input
 
-        # state that goes into the LLM
         state = input_id[:, :feature_dim]
 
-        # ---- FAISS setup ----
-        if isinstance(self.cost_dic, torch.Tensor):
-            cost_dic_np = self.cost_dic.detach().cpu().numpy()
-        else:
-            cost_dic_np = np.asarray(self.cost_dic)
-        self.cost_dic_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype('float32'))
-        self.cost_dic_y    = cost_dic_np[:, -1]  # keep as numpy for simple indexing
-
-        index = faiss.IndexFlatL2(self.cost_dic_data.shape[1])
-        index.add(self.cost_dic_data)
-
-        profit_sum = 0.0
-        profit_count = 0
-        time_sum = 0
-        time_count = 0
-        local_profits = []
+        # ---- FAISS setup — build index once and cache ----
+        if not hasattr(self, "_faiss_index") or self._faiss_index is None:
+            if isinstance(self.cost_dic, torch.Tensor):
+                cost_dic_np = self.cost_dic.detach().cpu().numpy()
+            else:
+                cost_dic_np = np.asarray(self.cost_dic)
+            self._cost_data = np.ascontiguousarray(cost_dic_np[:, :-1].astype('float32'))
+            self._cost_y = cost_dic_np[:, -1].astype('float32')
+            self._faiss_index = faiss.IndexFlatL2(self._cost_data.shape[1])
+            self._faiss_index.add(self._cost_data)
 
         with torch.no_grad():
             if mode == "ori":
@@ -482,57 +640,55 @@ class CB_Session(object):
                 decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
                 decision_prob_value = decision_prob
             else:
-                # small one-time log for the first sample
-                _probe_logged = False
+                _infer_bs = int(getattr(self.env.args, "batch_size", 64))
+                _chunks = [
+                    self.value_network(state[_s:_s + _infer_bs])
+                    for _s in range(0, state.shape[0], _infer_bs)
+                ]
+                value_network_output = torch.cat(_chunks, dim=0)
+                # Clean one-hot from argmax — no float-equality trick
+                actions_tensor = value_network_output.argmax(dim=1)
+                decision_prob = F.one_hot(actions_tensor, num_classes=4).float()
+                decision_prob_value = decision_prob
 
-                value_network_output = self.value_network(state)
-                if not _probe_logged and value_network_output.shape[0] > 0:
-                    info(f"[LLM] forward invoked. First logits: {value_network_output[0].tolist()}")
-                    _probe_logged = True
+            action = decision_prob_value.argmax(dim=1).view(-1)  # view(-1) safe for batch=1
 
-                decision_prob_value = (F.softmax(value_network_output, dim=1)
-                                    == F.softmax(value_network_output, dim=1).max(dim=1, keepdim=True).values).float()
-                decision_prob = decision_prob_value
-
-            action = decision_prob_value.argmax(dim=1).squeeze()
-
-            # Decision accuracy vs. ground-truth decisions (column at feature_dim)
+            # Decision accuracy (logged only, no mutation of best_*)
+            dm_acc = None
             if mode != "ori":
                 gt_actions = ori_input[:, feature_dim].long()
                 dm_acc = (action == gt_actions).float().mean().item()
-                self.best_dm_accuracy = max(self.best_dm_accuracy, dm_acc)
-                info(f"[DM] decision accuracy: {dm_acc:.4f}")
+                info(f"[DM] {mode} decision accuracy: {dm_acc:.4f}")
 
-            # ---- FAISS queries ----
+            # ---- Vectorized FAISS lookup ----
             ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]
             ori_cpu = ori_input.detach().cpu()
+            action_np = action.detach().cpu().numpy().astype('float32')
+
             query_vectors = np.empty((state.shape[0], 3), dtype='float32')
             query_vectors[:, 0] = ori_cpu[:, ridx0].numpy()
             query_vectors[:, 1] = ori_cpu[:, ridx1].numpy()
-            query_vectors[:, 2] = action.detach().cpu().numpy().astype('float32')
+            query_vectors[:, 2] = action_np
 
-            # search
-            _, nearest_indices = index.search(query_vectors, 1)  # (B,1)
+            _, nearest_indices = self._faiss_index.search(query_vectors, 1)
             nearest_indices = nearest_indices.flatten()
 
-            for i in range(len(query_vectors)):
-                q = query_vectors[i]
-                n = self.cost_dic_data[nearest_indices[i]]
-                if np.array_equal(q, n):
-                    selected_y = self.cost_dic_y[nearest_indices[i]]
-                    selected_y = float(selected_y)
-                else:
-                    ai = int(action[i].detach().cpu().item())
-                    if isinstance(self.avg_profit, torch.Tensor):
-                        selected_y = float(self.avg_profit[ai].detach().cpu().item())
-                    else:
-                        selected_y = float(self.avg_profit[ai])
+            # Vectorized: check exact match for each row, fall back to avg_profit
+            matched = self._cost_data[nearest_indices]                    # [N, 3]
+            is_exact = np.all(matched == query_vectors, axis=1)           # [N] bool
+            matched_profits = self._cost_y[nearest_indices]               # [N]
 
-                profit_sum += selected_y
-                profit_count += 1
-                local_profits.append(selected_y)
+            if isinstance(self.avg_profit, torch.Tensor):
+                avg_profit_np = self.avg_profit.detach().cpu().numpy().astype('float32')
+            else:
+                avg_profit_np = np.asarray(self.avg_profit, dtype='float32')
+            fallback_profits = avg_profit_np[action_np.astype(np.int64)]  # [N]
 
-            # ---- time/on-time prediction via your model ----
+            local_profits = np.where(is_exact, matched_profits, fallback_profits)
+            profit_sum = float(local_profits.sum())
+            profit_count = int(local_profits.shape[0])
+
+            # ---- on-time prediction via simulator ----
             selected_embedding = torch.sum(
                 decision_prob.unsqueeze(2) * self.model.embedding.weight[:4, :], dim=1
             )
@@ -541,46 +697,26 @@ class CB_Session(object):
                 selected_embedding,
                 ori_input[:, feature_dim + 1:]
             )
-            # last token's argmax == on-time
-            time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
-            time_count += predicted_tokens[-1].shape[0]
+            time_sum = predicted_tokens[-1].argmax(dim=1).sum().item()
+            time_count = predicted_tokens[-1].shape[0]
 
         # aggregate metrics
         profit = (profit_sum / profit_count) if profit_count > 0 else 0.0
+        on_time_ratio = (time_sum / time_count) if time_count > 0 else 0.0
 
         # percentiles on profits
-        if local_profits:
-            sorted_profits = np.sort(np.asarray(local_profits, dtype=np.float32))
-            thresholds = [0.1, 0.2, 0.3]
+        if local_profits.size > 0:
+            sorted_profits = np.sort(local_profits)
             profit_min_percent = {}
-            for thr in thresholds:
-                idx = max(0, min(len(sorted_profits)-1, int(thr * len(sorted_profits))))
+            for thr in [0.1, 0.2, 0.3]:
+                idx = max(0, min(len(sorted_profits) - 1, int(thr * len(sorted_profits))))
                 profit_min_percent[thr] = float(sorted_profits[idx])
         else:
             profit_min_percent = {0.1: 0.0, 0.2: 0.0, 0.3: 0.0}
 
-        on_time_ratio = (time_sum / time_count) if time_count > 0 else 0.0
-
-        if profit > self.best_p:
-            self.best_p = profit
-        if on_time_ratio > self.best_o:
-            self.best_o = on_time_ratio
-        self.best_pmp1 = max(self.best_pmp1, profit_min_percent[0.1])
-        self.best_pmp2 = max(self.best_pmp2, profit_min_percent[0.2])
-        self.best_pmp3 = max(self.best_pmp3, profit_min_percent[0.3])
-
-        # (optional) log to wandb if enabled
-        if self.env.args.wandb:
-            import wandb
-            wandb.log({
-                "dm/profit": profit,
-                "dm/on_time": on_time_ratio,
-                "dm/pmp_0.1": profit_min_percent[0.1],
-                "dm/pmp_0.2": profit_min_percent[0.2],
-                "dm/pmp_0.3": profit_min_percent[0.3],
-            })
-
-        return profit, on_time_ratio, profit_min_percent, time.time() - t
+        # Callers (dm_train, main) log these via the return values so they can
+        # include all metrics in a single wandb.log() call and avoid step conflicts.
+        return profit, on_time_ratio, profit_min_percent, time.time() - t, dm_acc
 
 
     def test(self, mode):
@@ -650,8 +786,6 @@ class CB_Session(object):
         accuracies = [correct_preds[j] / total_samples[j] for j in range(label_dim)]
 
         return accuracies, time.time() - t
-
-
 
     def save_ckpt(self, path):
         torch.save(self.model.state_dict(), path)

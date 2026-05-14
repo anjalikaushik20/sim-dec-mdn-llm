@@ -85,6 +85,9 @@ def parse_args():
 
     parser.add_argument('--mip_coeff', type=float, default=1)
     parser.add_argument('--mil_coeff', type=float, default=1)
+    
+    parser.add_argument('--soft_label_temp', type=float, default=1.0,
+       help='Softmax temperature for soft labels. Lower = harder labels.')
 
 
     # ----------------------- logger
@@ -150,8 +153,11 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     my_session.dm_train()
-    prof, on_time, pmp, _ = my_session.dm_test("test")
+    prof, on_time, pmp, _, test_acc = my_session.dm_test("test")
     print("profit", prof, "on_time", on_time, "pmp", pmp)
+    if args.wandb:
+        wandb.log({"test/profit": prof, "test/on_time": on_time,
+                   "test/pmp_0.1": pmp[0.1], "test/pmp_0.2": pmp[0.2], "test/pmp_0.3": pmp[0.3]})
     print("best_dm_accuracy", my_session.best_dm_accuracy)
     print("best_profit", my_session.best_p)
     print("best_on_time", my_session.best_o)

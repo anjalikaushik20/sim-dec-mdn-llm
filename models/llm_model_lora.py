@@ -5,7 +5,7 @@
 
 import torch
 import torch.nn as nn
-from transformers import AutoModelForCausalLM, AutoConfig
+from transformers import AutoModel, AutoConfig
 from peft import (
     get_peft_model,
     LoraConfig,
@@ -20,9 +20,9 @@ class LLMLoRAValueNetwork(nn.Module):
         env,
         model_name="Qwen/Qwen2.5-0.5B-Instruct",
         batch_size=64,
-        lora_r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
+        lora_r=2,
+        lora_alpha=4,
+        lora_dropout=0.00,
         lora_target_modules=None,
     ):
         super().__init__()
@@ -42,8 +42,9 @@ class LLMLoRAValueNetwork(nn.Module):
         # Store for use in forward (avoids PEFT dtype proxy ambiguity)
         self._backbone_dtype = dtype
 
-        # Load base model — AutoModelForCausalLM required for Qwen2.5/Qwen3
-        self.backbone = AutoModelForCausalLM.from_pretrained(
+        # Load base transformer only (no LM head) — avoids the lm_head F.linear
+        # CUDA invalid-argument error that fires when the full test set is batched
+        self.backbone = AutoModel.from_pretrained(
             model_name,
             dtype=dtype,
         ).to(self.env.device)
@@ -128,16 +129,13 @@ class LLMLoRAValueNetwork(nn.Module):
         token_seq = torch.stack(group_embeds, dim=1)          # [B, 4, H]
         inputs_embeds = token_seq.to(dtype=self._backbone_dtype)
 
-        # AutoModelForCausalLM does not expose last_hidden_state directly;
-        # request all hidden states and take the final layer's last token.
         out = self.backbone(
             inputs_embeds=inputs_embeds,
             use_cache=False,
             return_dict=True,
-            output_hidden_states=True,
         )
-        # For causal LLMs the last token has attended over all preceding tokens
-        last = out.hidden_states[-1][:, -1, :].to(torch.float32)   # [B, H]
+        # Mean-pool across all 4 group tokens so every feature group contributes
+        last = out.last_hidden_state.mean(dim=1).to(torch.float32)  # [B, H]
         logits32 = self.cls_head(last)                              # [B, 4]
 
         return logits32.to(state.dtype)

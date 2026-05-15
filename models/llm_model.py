@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-from transformers import AutoModel, AutoConfig
+from transformers import AutoModel
 from tools import feature_list
 
 # used the following models for experiments:
@@ -32,7 +32,6 @@ class LLMValueNetwork(nn.Module):
         self.feature_dim = sum(self.group_dims)
 
         dtype = torch.float16 if ("cuda" in str(self.env.device)) else torch.float32
-        cfg = AutoConfig.from_pretrained(model_name)
         self.backbone = AutoModel.from_pretrained(model_name, torch_dtype=dtype).to(self.env.device)
         self.backbone.eval()
         for p in self.backbone.parameters():
@@ -64,8 +63,8 @@ class LLMValueNetwork(nn.Module):
         inputs_embeds = token_seq.to(self.backbone.dtype)     # match frozen backbone dtype
 
         out = self.backbone(inputs_embeds=inputs_embeds, use_cache=False, return_dict=True)
-        # For causal LLMs the last token has attended over all preceding tokens
-        last = out.last_hidden_state[:, -1, :].to(torch.float32)   # [B, H]
+        # Mean-pool across all 4 group tokens — every feature group contributes equally
+        last = out.last_hidden_state.mean(dim=1).to(torch.float32)  # [B, H]
         logits32 = self.cls_head(last)                              # [B, 4]
 
-        return logits32.to(state.dtype)
+        return logits32  # always float32 for numerical stability in loss functions

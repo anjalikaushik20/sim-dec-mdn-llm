@@ -349,12 +349,12 @@ class CB_Session(object):
             indices = perm[start:start + B]
             idx_np = indices.numpy()
 
-            Xb = self.scaler.transform(X_np[idx_np]).astype(np.float32)
-            state = torch.from_numpy(Xb).to(self.env.device)[:, :feature_dim]
+            # Raw (unscaled) features — LLM serializes them as text by feature name
+            raw_state = torch.from_numpy(X_np[idx_np].astype(np.float32)).to(self.env.device)[:, :feature_dim]
             a_star_batch = self.best_action_labels[indices].to(self.env.device)
             log_soft_batch = self.log_soft_labels[indices].to(self.env.device)
 
-            logits = self.value_network(state)  # [B, 4]
+            logits = self.value_network(raw_state)  # [B, 4]
 
             # Weighted CE corrects for class imbalance; KL exploits soft reward targets
             loss_ce = F.cross_entropy(logits, a_star_batch, weight=self.class_weights)
@@ -464,7 +464,7 @@ class CB_Session(object):
                     if adapter_save_path is not None:
                         adapter_state = {
                             k: v for k, v in self.value_network.state_dict().items()
-                            if "adapter" in k or "cls_head" in k
+                            if "cls_head" in k
                         }
                         torch.save(adapter_state, adapter_save_path)
                         info(f"[DM] New best val_score={val_score:.4f}, saved adapter → {adapter_save_path}")
@@ -521,6 +521,9 @@ class CB_Session(object):
             + feature_list.shipping_info[self.env.args.dataset]
         )
 
+        # Raw (unscaled) features for LLM text serialization — must be set before input_id is rescaled
+        raw_state = ori_input[:, :feature_dim]
+
         if mode != "ori":
             X = input_id.detach().cpu().numpy()
             X = self.scaler.transform(X)
@@ -528,7 +531,7 @@ class CB_Session(object):
         else:
             input_id = ori_input
 
-        state = input_id[:, :feature_dim]
+        state = input_id[:, :feature_dim]  # scaled features for the simulator
 
         # Build FAISS index once and cache — rebuilding every call is O(N) overhead
         if not hasattr(self, "_faiss_index") or self._faiss_index is None:
@@ -555,8 +558,8 @@ class CB_Session(object):
             else:
                 _bs = int(getattr(self.env.args, "batch_size", 64))
                 chunks = [
-                    self.value_network(state[s:s + _bs])
-                    for s in range(0, state.shape[0], _bs)
+                    self.value_network(raw_state[s:s + _bs])
+                    for s in range(0, raw_state.shape[0], _bs)
                 ]
                 value_network_output = torch.cat(chunks, dim=0)
                 # argmax of logits == argmax of softmax; one_hot avoids float-equality edge cases

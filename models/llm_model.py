@@ -1,8 +1,6 @@
-# llm_model_new.py  (essentials only)
-
 import torch
 import torch.nn as nn
-from transformers import AutoModel
+from transformers import AutoModel, AutoTokenizer
 from tools import feature_list
 
 # used the following models for experiments:
@@ -22,7 +20,6 @@ class LLMValueNetwork(nn.Module):
         self.batch_size = batch_size
 
         dataset = self.env.args.dataset
-        # Sizes of each feature group in the order they appear in the state vector
         self.group_dims = [
             len(feature_list.product_info[dataset]),
             len(feature_list.order_info[dataset]),
@@ -31,40 +28,80 @@ class LLMValueNetwork(nn.Module):
         ]
         self.feature_dim = sum(self.group_dims)
 
+        # Flat list of feature names and per-group slice boundaries for serialization
+        self.feature_names = (
+            feature_list.product_info[dataset]
+            + feature_list.order_info[dataset]
+            + feature_list.customer_info[dataset]
+            + feature_list.shipping_info[dataset]
+        )
+        self._group_labels = ["Product", "Order", "Customer", "Shipping"]
+        self._group_slices = []
+        offset = 0
+        for dim in self.group_dims:
+            self._group_slices.append((offset, offset + dim))
+            offset += dim
+
         dtype = torch.float16 if ("cuda" in str(self.env.device)) else torch.float32
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
         self.backbone = AutoModel.from_pretrained(model_name, torch_dtype=dtype).to(self.env.device)
         self.backbone.eval()
         for p in self.backbone.parameters():
             p.requires_grad = False  # frozen LLM
 
         hidden = self.backbone.config.hidden_size
-
-        # One adapter per feature group; cls_head reads the last token (attends over all 4)
-        # All trainable layers stay in float32 for numerical stability
-        self.adapters = nn.ModuleList([
-            nn.Linear(dim, hidden).to(self.env.device, dtype=torch.float32)
-            for dim in self.group_dims
-        ])
+        # Only the classification head is trainable — backbone is fully frozen
         self.cls_head = nn.Linear(hidden, 4).to(self.env.device, dtype=torch.float32)
 
-    def forward(self, state: torch.Tensor) -> torch.Tensor:
-        state32 = state.to(self.env.device, dtype=torch.float32)
+    def serialize_batch(self, raw_state: torch.Tensor) -> list:
+        """Convert a batch of raw (unscaled) feature vectors to natural-language strings.
 
-        # Split the flat state into per-group slices and project each to hidden dim
-        group_embeds = []
-        offset = 0
-        for adapter, dim in zip(self.adapters, self.group_dims):
-            group_slice = state32[:, offset: offset + dim]   # [B, group_dim]
-            group_embeds.append(adapter(group_slice))         # [B, H]
-            offset += dim
+        Each feature group becomes a comma-separated key=value clause so the LLM
+        can use its pretrained knowledge of feature names like 'Order Quantity' or
+        'Discount %' to reason about the best shipping action.
+        """
+        raw_np = raw_state.detach().cpu().numpy()
+        texts = []
+        for row in raw_np:
+            parts = []
+            for label, (s, e) in zip(self._group_labels, self._group_slices):
+                names = self.feature_names[s:e]
+                vals = row[s:e]
+                kv = ", ".join(f"{n}={v:.3g}" for n, v in zip(names, vals))
+                parts.append(f"{label}: {kv}")
+            texts.append(". ".join(parts) + ". Predict optimal shipping action.")
+        return texts
 
-        # Stack into a sequence of 4 tokens so the LLM attends across feature groups
-        token_seq = torch.stack(group_embeds, dim=1)          # [B, 4, H]
-        inputs_embeds = token_seq.to(self.backbone.dtype)     # match frozen backbone dtype
+    def forward(self, raw_state: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            raw_state: [B, feature_dim] unscaled feature tensor
+        Returns:
+            [B, 4] float32 logits
+        """
+        texts = self.serialize_batch(raw_state)
+        enc = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        )
+        input_ids = enc["input_ids"].to(self.env.device)
+        attention_mask = enc["attention_mask"].to(self.env.device)
 
-        out = self.backbone(inputs_embeds=inputs_embeds, use_cache=False, return_dict=True)
-        # Mean-pool across all 4 group tokens — every feature group contributes equally
-        last = out.last_hidden_state.mean(dim=1).to(torch.float32)  # [B, H]
-        logits32 = self.cls_head(last)                              # [B, 4]
-
-        return logits32  # always float32 for numerical stability in loss functions
+        out = self.backbone(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            use_cache=False,
+            return_dict=True,
+        )
+        # Mean-pool over non-padding token positions so all input tokens contribute equally
+        hidden = out.last_hidden_state                                    # [B, T, H]
+        mask = attention_mask.unsqueeze(-1).float()                      # [B, T, 1]
+        pooled = (hidden.float() * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)  # [B, H]
+        return self.cls_head(pooled)                                     # [B, 4]

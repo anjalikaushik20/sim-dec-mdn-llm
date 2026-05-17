@@ -1,5 +1,7 @@
 import sys
+import os
 import argparse
+import logging
 import time
 import torch
 import wandb
@@ -66,6 +68,8 @@ def parse_args():
     parser.add_argument('--mip_coeff', type=float, default=1)
     parser.add_argument('--mil_coeff', type=float, default=1)
 
+    parser.add_argument('--soft_label_temp', type=float, default=1.0,
+        help='Temperature for soft reward targets. Lower = harder labels.')
 
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)
@@ -76,9 +80,29 @@ def parse_args():
 
 
 
+# ----------------------------------- Logging Setup -----------------------------------------------------------
+# Configure Python logging to write to a timestamped file AND stdout/stderr.
+# All info() calls (which use logging.info + print) will be captured in both places.
+os.makedirs("run_logs", exist_ok=True)
+_log_ts = time.strftime("%Y%m%d_%H%M%S")
+
 # ----------------------------------- Env Init -----------------------------------------------------------
 info('--------------------------------Een Init----------------------------------')
 args = parse_args()
+
+_log_path = f"run_logs/train_ac_{args.dataset}_{_log_ts}.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y/%m/%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(_log_path),
+        logging.StreamHandler(),
+    ],
+    force=True,
+)
+info(f"Log file: {_log_path}")
+
 my_env = Env(args)
 
 
@@ -95,6 +119,7 @@ if args.ckpt != None:
     my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
 # llm_model = LLMValueNetwork(my_env)
 llm_model = LLMValueNetwork(my_env, model_name=args.hf_model_name)
+info("Training: frozen transformer body → last hidden state → lm_head (4 action logits) | Inference: generate_action() autoregressive decoding")
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)
@@ -112,14 +137,18 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     my_session.dm_train()
-    prof, on_time, pmp, _ = my_session.dm_test("test")
-    print("profit", prof, "on_time", on_time, "pmp", pmp)
-    print("best_dm_accuracy", my_session.best_dm_accuracy)
-    print("best_profit", my_session.best_p)
-    print("best_on_time", my_session.best_o)
-    print("best_pmp_1", my_session.best_pmp1)
-    print("best_pmp_2", my_session.best_pmp2)
-    print("best_pmp_3", my_session.best_pmp3)
+    prof, on_time, pmp, _, test_acc = my_session.dm_test("test")
+    info(f"[TEST] profit={prof:.4f} on_time={on_time:.4f} test_acc={test_acc:.4f} pmp={pmp}")
+    info(f"best_dm_accuracy={my_session.best_dm_accuracy:.4f}")
+    info(f"best_profit={my_session.best_p:.4f}")
+    info(f"best_on_time={my_session.best_o:.4f}")
+    info(f"best_pmp_1={my_session.best_pmp1:.4f}")
+    info(f"best_pmp_2={my_session.best_pmp2:.4f}")
+    info(f"best_pmp_3={my_session.best_pmp3:.4f}")
+    if args.wandb:
+        wandb.log({"test/profit": prof, "test/on_time": on_time,
+                   "test/acc": test_acc if test_acc is not None else 0.0,
+                   "test/pmp_0.1": pmp[0.1], "test/pmp_0.2": pmp[0.2], "test/pmp_0.3": pmp[0.3]})
 
 my_session.test("test")      # or my_session.test()
 

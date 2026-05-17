@@ -1,8 +1,6 @@
-# llm_model_new.py  (essentials only)
-
 import torch
 import torch.nn as nn
-from transformers import AutoModel, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from tools import feature_list
 
 # used the following models for experiments:
@@ -22,7 +20,6 @@ class LLMValueNetwork(nn.Module):
         self.batch_size = batch_size
 
         dataset = self.env.args.dataset
-        # Sizes of each feature group in the order they appear in the state vector
         self.group_dims = [
             len(feature_list.product_info[dataset]),
             len(feature_list.order_info[dataset]),
@@ -31,75 +28,153 @@ class LLMValueNetwork(nn.Module):
         ]
         self.feature_dim = sum(self.group_dims)
 
-        dtype = torch.float16 if ("cuda" in str(self.env.device)) else torch.float32
-        cfg = AutoConfig.from_pretrained(model_name)
-        self.backbone = AutoModel.from_pretrained(model_name, torch_dtype=dtype).to(self.env.device)
-        self.backbone.eval()
-        for p in self.backbone.parameters():
-            p.requires_grad = False  # frozen LLM
-
-        hidden = self.backbone.config.hidden_size
-
-        # One adapter per feature group; all trainable layers stay in float32
-        self.adapters = nn.ModuleList([
-            nn.Linear(dim, hidden).to(self.env.device, dtype=torch.float32)
-            for dim in self.group_dims
-        ])
-        # Action embedding: one vector per action, same normal init as simulator's embedding
-        self.action_embed = nn.Embedding(4, hidden).to(self.env.device, dtype=torch.float32)
-        nn.init.normal_(self.action_embed.weight)
-        # Scalar Q-head: scores a single (state, action) pair
-        self.q_head = nn.Linear(hidden, 1).to(self.env.device, dtype=torch.float32)
-
-    def forward(self, state: torch.Tensor, action_indices: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            state:          [B, D] float tensor of scaled features
-            action_indices: [B]    long tensor of action ids in {0,1,2,3}
-        Returns:
-            [B] float tensor of Q(state, action) scalar scores
-        """
-        state32 = state.to(self.env.device, dtype=torch.float32)
-
-        # Split the flat state into per-group slices and project each to hidden dim
-        group_embeds = []
+        # Flat list of feature names and per-group slice boundaries for serialization
+        self.feature_names = (
+            feature_list.product_info[dataset]
+            + feature_list.order_info[dataset]
+            + feature_list.customer_info[dataset]
+            + feature_list.shipping_info[dataset]
+        )
+        self._group_labels = ["Product", "Order", "Customer", "Shipping"]
+        self._group_slices = []
         offset = 0
-        for adapter, dim in zip(self.adapters, self.group_dims):
-            group_slice = state32[:, offset: offset + dim]   # [B, group_dim]
-            group_embeds.append(adapter(group_slice))         # [B, H]
+        for dim in self.group_dims:
+            self._group_slices.append((offset, offset + dim))
             offset += dim
 
-        # 4 feature-group tokens
-        token_seq = torch.stack(group_embeds, dim=1)          # [B, 4, H]
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        # Left-padding keeps the last real token at position -1, which is what
+        # we read for hidden-state extraction and what generate() expects.
+        self.tokenizer.padding_side = "left"
 
-        # 1 action token appended at the end
-        action_emb = self.action_embed(
-            action_indices.to(self.env.device, dtype=torch.long)
-        )                                                       # [B, H]
-        action_token = action_emb.unsqueeze(1)                  # [B, 1, H]
+        # Load in float32 then move to device.
+        # float16/bfloat16 cause "CUDA driver error: invalid argument" on this
+        # hardware during both the forward pass (RMSNorm) and the .to() conversion.
+        # device_map is also avoided: it triggers caching_allocator_warmup() inside
+        # transformers which unconditionally allocates a float16 tensor and fails
+        # with the same error regardless of the model dtype.
+        self.backbone = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float32,
+        )
+        self.backbone.to(self.env.device)
+        self.backbone.eval()
+        # Freeze the entire backbone first; lm_head is selectively unfrozen below.
+        for p in self.backbone.parameters():
+            p.requires_grad = False
 
-        # Concatenate → [B, 5, H], then cast to backbone dtype
-        inputs_embeds = torch.cat([token_seq, action_token], dim=1)  # [B, 5, H]
-        inputs_embeds = inputs_embeds.to(self.backbone.dtype)
+        # Token IDs for the digit strings "0"–"3" used as action labels.
+        self._action_token_ids = [
+            self.tokenizer.encode(str(i), add_special_tokens=False)[0]
+            for i in range(4)
+        ]
 
-        out = self.backbone(inputs_embeds=inputs_embeds, use_cache=False, return_dict=True)
-        # Last token is the action token; for causal models it has attended over all 4 feature tokens
-        last = out.last_hidden_state[:, -1, :].to(torch.float32)   # [B, H]
-        q_val = self.q_head(last).squeeze(-1)                       # [B]
+        # Detach lm_head weight from embed_tokens weight tying (Qwen3/Llama share the
+        # same Python object).  Without clone(), unfreezing lm_head also unfreezes
+        # embed_tokens, bloating the gradient and causing CUBLAS OOM.
+        lm = self.backbone.lm_head
+        lm.weight = nn.Parameter(lm.weight.detach().clone())
+        for p in lm.parameters():
+            p.requires_grad = True
 
-        return q_val.to(state.dtype)
+    def serialize_batch(self, raw_state: torch.Tensor) -> list:
+        """Convert a batch of raw (unscaled) feature vectors to natural-language prompt strings."""
+        raw_np = raw_state.detach().cpu().numpy()
+        texts = []
+        for row in raw_np:
+            parts = []
+            for label, (s, e) in zip(self._group_labels, self._group_slices):
+                names = self.feature_names[s:e]
+                vals = row[s:e]
+                kv = ", ".join(f"{n}={v:.3g}" for n, v in zip(names, vals))
+                parts.append(f"{label}: {kv}")
+            texts.append(
+                ". ".join(parts)
+                + ". Optimal shipping action"
+                  " (0=Standard Class, 1=Second Class, 2=First Class, 3=Same Day):"
+            )
+        return texts
 
-    def score_all_actions(self, state: torch.Tensor) -> torch.Tensor:
+    def forward(self, raw_state: torch.Tensor) -> torch.Tensor:
         """
-        Evaluate Q(state, a) for every a in {0,1,2,3}.
+        Frozen transformer body → last-position hidden state → lm_head → [B, 4] logits.
+
+        Only the lm_head is differentiable; the transformer body runs inside
+        torch.no_grad().  The 4 logits correspond to the token IDs for "0"–"3".
+
         Args:
-            state: [B, D]
+            raw_state: [B, feature_dim] unscaled feature tensor
         Returns:
-            [B, 4] Q-value matrix — column a is Q(state, a)
+            [B, 4] float32 logits over the 4 shipping actions
         """
-        B = state.shape[0]
-        scores = []
-        for a in range(4):
-            a_idx = torch.full((B,), a, dtype=torch.long, device=self.env.device)
-            scores.append(self.forward(state, a_idx))   # [B]
-        return torch.stack(scores, dim=1)               # [B, 4]
+        texts = self.serialize_batch(raw_state)
+        enc = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        )
+        input_ids = enc["input_ids"].to(self.env.device)
+        attention_mask = enc["attention_mask"].to(self.env.device)
+
+        base = getattr(self.backbone, "model", self.backbone)
+        with torch.no_grad():
+            out = base(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                use_cache=False,
+                return_dict=True,
+            )
+
+        last_hidden = out.last_hidden_state[:, -1, :].float()   # [B, hidden]
+        full_logits = self.backbone.lm_head(last_hidden)         # [B, vocab_size]
+        return full_logits[:, self._action_token_ids]            # [B, 4]
+
+    def score_all_actions(self, raw_state: torch.Tensor) -> torch.Tensor:
+        """Alias for forward() — returns [B, 4] logits for all actions."""
+        return self.forward(raw_state)
+
+    @torch.no_grad()
+    def generate_action(self, raw_state: torch.Tensor) -> torch.Tensor:
+        """
+        True LLM inference: autoregressively generate the action token and parse it.
+
+        Args:
+            raw_state: [B, feature_dim] unscaled feature tensor
+        Returns:
+            [B] long tensor of action indices in {0, 1, 2, 3}
+        """
+        texts = self.serialize_batch(raw_state)
+        enc = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        )
+        input_ids = enc["input_ids"].to(self.env.device)
+        attention_mask = enc["attention_mask"].to(self.env.device)
+
+        generated = self.backbone.generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=8,
+            do_sample=False,
+            pad_token_id=self.tokenizer.pad_token_id,
+        )
+        new_tokens = generated[:, input_ids.shape[1]:]
+        decoded = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
+
+        actions = []
+        for text in decoded:
+            found = None
+            for ch in text.strip():
+                if ch in "0123":
+                    found = int(ch)
+                    break
+            actions.append(found if found is not None else 0)
+
+        return torch.tensor(actions, dtype=torch.long, device=self.env.device)

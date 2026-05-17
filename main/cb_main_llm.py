@@ -119,6 +119,7 @@ if args.ckpt != None:
     my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
 # llm_model = LLMValueNetwork(my_env)
 llm_model = LLMValueNetwork(my_env, model_name=args.hf_model_name)
+info("Training: frozen transformer body → last hidden state → lm_head (4 action logits) | Inference: generate_action() autoregressive decoding")
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)

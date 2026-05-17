@@ -1,7 +1,7 @@
-# SFT MODE: Decision maker trained with Best-Action Cross-Entropy.
-# Labels are generated offline using FAISS profit lookup + S_SimDec simulator.
-# Only the LLMValueNetwork adapters and cls_head are trained — backbone frozen.
-# To switch back to REINFORCE, restore dm_train_epoch to the original version.
+# LLM GENERATION MODE: LLM generates shipping actions autoregressively at inference.
+# Training: lm_head fine-tuned with cross-entropy on best-action labels (FAISS + simulator).
+# Transformer body is fully frozen — only the detached lm_head is trained.
+# Inference: generate_action() drives autoregressive decoding; forward() is used for training only.
 
 import sys
 import os
@@ -91,7 +91,7 @@ class CB_Session(object):
         # Create optimizer for the trainable head only
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
         if not trainable_params:
-            info("WARNING: No trainable parameters found in value_network. Check adapter/cls_head requires_grad.")
+            info("WARNING: No trainable parameters found in value_network. Check lm_head requires_grad.")
         self.optimizer_dm = torch.optim.Adam(
             trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
         )
@@ -158,7 +158,7 @@ class CB_Session(object):
                 ori_b = ori_t[start:end]
 
                 if batch_idx % log_every == 0:
-                    info(f"[SFT] precompute_best_actions: batch {batch_idx}/{n_batches}")
+                    info(f"[LABEL] precompute_best_actions: batch {batch_idx}/{n_batches}")
 
                 for a in range(4):
                     q_np = np.stack([
@@ -195,7 +195,7 @@ class CB_Session(object):
             # Per-stream std normalization so neither signal dominates the other
             profit_std = all_profits.std().clamp_min(1e-6)
             on_time_std = all_on_time.std().clamp_min(1e-6)
-            info(f"[SFT] reward stats — profit_std={profit_std:.4f} on_time_std={on_time_std:.4f}")
+            info(f"[LABEL] reward stats — profit_std={profit_std:.4f} on_time_std={on_time_std:.4f}")
 
             all_rewards = (all_profits / profit_std) + \
                           self.env.args.otr_reward_coeff * (all_on_time / on_time_std)
@@ -203,7 +203,7 @@ class CB_Session(object):
             # NaN in rewards would silently corrupt labels — replace with zeros
             if torch.isnan(all_rewards).any():
                 n_nan = torch.isnan(all_rewards).sum().item()
-                info(f"[SFT] WARNING: {n_nan} NaN values in reward matrix — replacing with 0")
+                info(f"[LABEL] WARNING: {n_nan} NaN values in reward matrix — replacing with 0")
                 all_rewards = torch.nan_to_num(all_rewards, nan=0.0)
 
             self.best_action_rewards = all_rewards
@@ -219,10 +219,10 @@ class CB_Session(object):
             self.class_weights = (counts.sum() / (4 * counts.clamp_min(1.0))).to(self.env.device)
 
         torch.cuda.empty_cache()
-        info(f"[SFT] Label distribution: {torch.bincount(self.best_action_labels).tolist()}")
-        info(f"[SFT] Class weights: {self.class_weights.detach().cpu().tolist()}")
+        info(f"[LABEL] Label distribution: {torch.bincount(self.best_action_labels).tolist()}")
+        info(f"[LABEL] Class weights: {self.class_weights.detach().cpu().tolist()}")
         soft_ent = -(self.soft_labels * self.soft_labels.clamp_min(1e-9).log()).sum(dim=1).mean().item()
-        info(f"[SFT] Soft label mean entropy: {soft_ent:.4f} (max for 4 classes = 1.386)")
+        info(f"[LABEL] Soft label mean entropy: {soft_ent:.4f} (max for 4 classes = 1.386)")
 
     def train_epoch(self):
         t = time.time()
@@ -306,10 +306,10 @@ class CB_Session(object):
 
         
     def dm_train_epoch(self):
-        """One SFT epoch: full shuffled sweep over all training data.
+        """One lm_head training epoch: full shuffled sweep over all training data.
 
-        Uses class-weighted CE on hard labels combined with KL-div on soft reward
-        targets to handle label imbalance and exploit distributional reward info.
+        Fine-tunes lm_head with class-weighted CE on hard best-action labels and
+        KL-div on soft reward targets.  The transformer body stays fully frozen throughout.
         Returns (avg_loss, avg_loss_ce, avg_loss_kl, train_acc).
         """
         assert hasattr(self, "best_action_labels") and self.best_action_labels is not None, \
@@ -392,10 +392,10 @@ class CB_Session(object):
 
 
     def dm_train(self):
-        """SFT training loop with periodic val evaluation, early stopping, best-adapter saving."""
-        info("[SFT] Pre-computing best-action labels from FAISS + simulator...")
+        """lm_head fine-tuning loop with periodic val evaluation, early stopping, and best-checkpoint saving."""
+        info("[LABEL] Pre-computing best-action labels via FAISS profit lookup + simulator...")
         self.precompute_best_actions()
-        info(f"[SFT] Label pre-computation complete. Starting SFT for {self.env.args.dm_epochs} epochs.")
+        info(f"[DM TRAIN] Label precomputation complete. Fine-tuning lm_head for {self.env.args.dm_epochs} epochs.")
 
         scheduler_dm = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer_dm, T_max=self.env.args.dm_epochs, eta_min=1e-6
@@ -464,10 +464,10 @@ class CB_Session(object):
                     if adapter_save_path is not None:
                         adapter_state = {
                             k: v for k, v in self.value_network.state_dict().items()
-                            if "cls_head" in k
+                            if "lm_head" in k
                         }
                         torch.save(adapter_state, adapter_save_path)
-                        info(f"[DM] New best val_score={val_score:.4f}, saved adapter → {adapter_save_path}")
+                        info(f"[DM TRAIN] New best val_score={val_score:.4f}, saved lm_head → {adapter_save_path}")
                 else:
                     early_stop_counter += 1
                     info(f"[DM] no improvement ({early_stop_counter}/{patience})")
@@ -490,7 +490,7 @@ class CB_Session(object):
                 info(f"[DM] Loss summary over {len(lh)} epochs — "
                      f"initial={lh[0]:.4f} final={lh[-1]:.4f} "
                      f"min={finite.min():.4f} max={finite.max():.4f} mean={finite.mean():.4f}")
-        info(f"[DM] Training complete. Best val_score={best_val_score:.4f} at epoch {self.best_dm_epoch}.")
+        info(f"[DM TRAIN] lm_head fine-tuning complete. Best val_score={best_val_score:.4f} at epoch {self.best_dm_epoch}.")
 
 
 
@@ -556,15 +556,14 @@ class CB_Session(object):
                 decision_indices = input_id[:, feature_dim].long()
                 decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
             else:
+                # generate_action() runs the LLM autoregressively and parses the output digit
                 _bs = int(getattr(self.env.args, "batch_size", 64))
                 chunks = [
-                    self.value_network(raw_state[s:s + _bs])
+                    self.value_network.generate_action(raw_state[s:s + _bs])
                     for s in range(0, raw_state.shape[0], _bs)
                 ]
-                value_network_output = torch.cat(chunks, dim=0)
-                # argmax of logits == argmax of softmax; one_hot avoids float-equality edge cases
-                actions = value_network_output.argmax(dim=1)
-                decision_prob = F.one_hot(actions, num_classes=4).float()
+                action = torch.cat(chunks, dim=0)
+                decision_prob = F.one_hot(action, num_classes=4).float()
 
             action = decision_prob.argmax(dim=1).view(-1)
 
@@ -572,7 +571,7 @@ class CB_Session(object):
                 gt_actions = ori_input[:, feature_dim].long()
                 dm_acc = (action == gt_actions).float().mean().item()
                 self.best_dm_accuracy = max(self.best_dm_accuracy, dm_acc)
-                info(f"[DM] {mode} decision accuracy: {dm_acc:.4f}")
+                info(f"[GEN] {mode} generation accuracy (LLM vs ground truth): {dm_acc:.4f}")
 
             # Vectorized FAISS profit lookup
             ridx0, ridx1 = feature_list.retrieva_index[self.env.args.dataset]

@@ -1,5 +1,7 @@
 import sys
+import os
 import argparse
+import logging
 import time
 import torch
 import wandb
@@ -83,9 +85,27 @@ def parse_args():
 
 
 
+# ----------------------------------- Logging Setup -----------------------------------------------------------
+os.makedirs("run_logs", exist_ok=True)
+_log_ts = time.strftime("%Y%m%d_%H%M%S")
+
 # ----------------------------------- Env Init -----------------------------------------------------------
 info('--------------------------------Een Init----------------------------------')
 args = parse_args()
+
+_log_path = f"run_logs/train_sgro_{args.dataset}_{_log_ts}.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y/%m/%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(_log_path),
+        logging.StreamHandler(),
+    ],
+    force=True,
+)
+info(f"Log file: {_log_path}")
+
 my_env = Env(args)
 
 
@@ -102,6 +122,7 @@ if args.ckpt != None:
     my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
 # llm_model = LLMValueNetwork(my_env)
 llm_model = LLMValueNetwork(my_env, model_name=args.hf_model_name)
+info("Training: frozen transformer body → last hidden state → lm_head (4 action logits) | Inference: generate_action() autoregressive decoding")
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)
@@ -119,14 +140,14 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
     my_session.dm_train()
-    prof, on_time, pmp, _ = my_session.dm_test("test")
-    print("profit", prof, "on_time", on_time, "pmp", pmp)
-    print("best_dm_accuracy", my_session.best_dm_accuracy)
-    print("best_profit", my_session.best_p)
-    print("best_on_time", my_session.best_o)
-    print("best_pmp_1", my_session.best_pmp1)
-    print("best_pmp_2", my_session.best_pmp2)
-    print("best_pmp_3", my_session.best_pmp3)
+    prof, on_time, pmp, _, test_acc = my_session.dm_test("test")
+    info(f"[TEST] profit={prof:.4f} on_time={on_time:.4f} test_acc={test_acc:.4f} pmp={pmp}")
+    info(f"best_dm_accuracy={my_session.best_dm_accuracy:.4f}")
+    info(f"best_profit={my_session.best_p:.4f}")
+    info(f"best_on_time={my_session.best_o:.4f}")
+    info(f"best_pmp_1={my_session.best_pmp1:.4f}")
+    info(f"best_pmp_2={my_session.best_pmp2:.4f}")
+    info(f"best_pmp_3={my_session.best_pmp3:.4f}")
 
 my_session.test("test")      # or my_session.test()
 

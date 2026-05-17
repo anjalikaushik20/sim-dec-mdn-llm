@@ -2,7 +2,8 @@
 # Pre-computes a [N, 4] reward matrix (FAISS profit + soft p_ontime from simulator),
 # then trains with a combined loss: alpha_sft * CE(best-action) + alpha_reward * KL_AWR.
 # Checkpoint selection is by estimated val reward (argmax Q -> lookup in val reward matrix).
-# Backbone frozen; only adapters, action_embed, and q_head are trained.
+# Training: lm_head fine-tuned with SGRO loss — transformer body fully frozen.
+# Inference: generate_action() drives autoregressive decoding; forward() is used for training only.
 
 import sys
 import os
@@ -92,7 +93,7 @@ class CB_Session(object):
         # Create optimizer for the trainable head only
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
         if not trainable_params:
-            info("WARNING: No trainable parameters found in value_network. Check adapters/action_embed/q_head requires_grad.")
+            info("WARNING: No trainable parameters found in value_network. Check lm_head requires_grad.")
         self.optimizer_dm = torch.optim.Adam(
             trainable_params, lr=self.env.args.dm_lr, weight_decay=self.env.args.dm_decay_coeff
         )
@@ -316,12 +317,12 @@ class CB_Session(object):
             + feature_list.shipping_info[self.env.args.dataset]
         )
 
-        Xb = self.scaler.transform(X_np[indices.numpy()]).astype(np.float32)
-        state = torch.from_numpy(Xb).to(self.env.device)[:, :feature_dim]
+        # Raw (unscaled) features — LLM serializes them as text by feature name
+        raw_state = torch.from_numpy(X_np[indices.numpy()].astype(np.float32)).to(self.env.device)[:, :feature_dim]
 
         rewards_b = self.train_reward_matrix[indices].to(self.env.device)  # [B, 4]
 
-        q_values = self.value_network.score_all_actions(state)  # [B, 4]
+        q_values = self.value_network(raw_state)  # [B, 4]
 
         # SFT term: CE toward the highest-reward action label
         best_actions = rewards_b.argmax(dim=1)  # [B]
@@ -365,14 +366,13 @@ class CB_Session(object):
             + feature_list.customer_info[self.env.args.dataset]
             + feature_list.shipping_info[self.env.args.dataset]
         )
-        Xs = self.scaler.transform(X_np).astype(np.float32)
-
         B = int(self.env.args.batch_size)
         best_actions_list = []
         with torch.no_grad():
             for i in range(0, N, B):
-                state_b = torch.from_numpy(Xs[i:i+B, :feature_dim]).to(self.env.device)
-                q = self.value_network.score_all_actions(state_b)  # [b, 4]
+                # Raw (unscaled) features for LLM text serialization
+                raw_state = torch.from_numpy(X_np[i:i+B, :feature_dim]).to(self.env.device)
+                q = self.value_network(raw_state)  # [b, 4]
                 best_actions_list.append(q.argmax(dim=1).cpu())
         best_actions = torch.cat(best_actions_list)  # [N]
 
@@ -472,6 +472,9 @@ class CB_Session(object):
             + feature_list.shipping_info[self.env.args.dataset]
         )
 
+        # Raw (unscaled) features for LLM text serialization — must be set before input_id is rescaled
+        raw_state = ori_input[:, :feature_dim]
+
         # scale (on CPU, NumPy), then back to torch on device
         if mode != "ori":
             X = input_id.detach().cpu().numpy()
@@ -480,7 +483,7 @@ class CB_Session(object):
         else:
             input_id = ori_input  # already on device
 
-        # state that goes into the LLM
+        # state that goes into the simulator (scaled)
         state = input_id[:, :feature_dim]
 
         # ---- FAISS setup ----
@@ -508,28 +511,24 @@ class CB_Session(object):
                 decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
                 decision_prob_value = decision_prob
             else:
-                # small one-time log for the first sample
-                _probe_logged = False
-
-                # Score all 4 actions for every state: [N, 4] Q-value matrix
-                value_network_output = self.value_network.score_all_actions(state)
-                if not _probe_logged and value_network_output.shape[0] > 0:
-                    info(f"[LLM] forward invoked. First q_values: {value_network_output[0].tolist()}")
-                    _probe_logged = True
-
-                # One-hot of the greedy action (used for simulator embedding lookup below)
-                decision_prob_value = (value_network_output
-                                       == value_network_output.max(dim=1, keepdim=True).values).float()
-                decision_prob = decision_prob_value
+                # generate_action() runs the LLM autoregressively and parses the output digit
+                _bs = int(getattr(self.env.args, "batch_size", 64))
+                chunks = [
+                    self.value_network.generate_action(raw_state[s:s + _bs])
+                    for s in range(0, raw_state.shape[0], _bs)
+                ]
+                action = torch.cat(chunks, dim=0)
+                decision_prob = F.one_hot(action, num_classes=4).float()
+                decision_prob_value = decision_prob
 
             action = decision_prob_value.argmax(dim=1)
 
-            # Decision accuracy vs. ground-truth decisions (column at feature_dim)
+            dm_acc = None
             if mode != "ori":
                 gt_actions = ori_input[:, feature_dim].long()
                 dm_acc = (action == gt_actions).float().mean().item()
                 self.best_dm_accuracy = max(self.best_dm_accuracy, dm_acc)
-                info(f"[DM] decision accuracy: {dm_acc:.4f}")
+                info(f"[GEN] {mode} generation accuracy (LLM vs ground truth): {dm_acc:.4f}")
 
             # ---- FAISS queries ----
             # Build (num_samples, 3) float32 numpy query vectors: [feat_i, feat_j, action]
@@ -613,7 +612,7 @@ class CB_Session(object):
                 "dm/pmp_0.3": profit_min_percent[0.3],
             })
 
-        return profit, on_time_ratio, profit_min_percent, time.time() - t
+        return profit, on_time_ratio, profit_min_percent, time.time() - t, dm_acc
 
 
     def test(self, mode):

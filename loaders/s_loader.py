@@ -148,7 +148,7 @@ class S_Loader(torch.utils.data.Dataset):
         
         
         for feature in categorical_features:
-            unique_classes = len(np.unique(data[feature].astype(str)))
+            unique_classes = data[feature].astype(str).nunique()
             self.feature_classes.append(unique_classes)
         
         return None

@@ -127,8 +127,3 @@ If you use this codebase, please cite appropriately.
 ---
 
 For questions or issues, please open an issue in this -->
-python -m pip install -r requirements.txt
-export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:${PYTHONPATH:-}"
-chmod +x run_qwen_3_1.7B_server.sh 
-./run_qwen_3_1.7B_server.sh
-bash run_nohup.sh run_qwen_3_0.6B_server.sh

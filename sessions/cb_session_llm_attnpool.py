@@ -511,7 +511,11 @@ class CB_Session(object):
         Returns (avg_loss, avg_profit_loss, avg_late_loss, avg_mi_loss, avg_ma_loss, train_time).
         """
         t = time.time()
-        self.model.eval()
+        # cuDNN RNN backward requires training mode — keep model.train() but freeze params
+        # so no simulator weights are updated, only pool_attn + cls_head via optimizer_dm.
+        self.model.train()
+        for p in self.model.parameters():
+            p.requires_grad_(False)
         self.value_network.train()
 
         feature_dim = len(
@@ -744,6 +748,11 @@ class CB_Session(object):
                      f"initial={lh[0]:.4f} final={lh[-1]:.4f} "
                      f"min={finite.min():.4f} max={finite.max():.4f} mean={finite.mean():.4f}")
         info(f"[DM TRAIN] Attnpool fine-tuning complete. Best val_score={best_val_score:.4f} at epoch {self.best_dm_epoch}.")
+
+        if adapter_save_path is not None and os.path.exists(adapter_save_path):
+            best_state = torch.load(adapter_save_path, map_location=self.env.device)
+            self.value_network.load_state_dict(best_state, strict=False)
+            info(f"[DM TRAIN] Reloaded best attnpool weights from {adapter_save_path}")
 
 
     def dm_test(self, mode="test"):

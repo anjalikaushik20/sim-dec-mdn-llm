@@ -181,6 +181,10 @@ class CB_Session(object):
                     pred_tokens = self.model(state_b, selected_emb, ori_b[:, feature_dim + 1:])
                     on_time = pred_tokens[-1].argmax(dim=1).float()
 
+                    hit_rate = float(np.mean([np.array_equal(q_np[i], cost_data[nn_idx[i]]) for i in range(bs)]))
+                    info(f"[LABEL] action={a} FAISS hit rate this batch: {hit_rate:.3f}")
+                    info(f"[LABEL] action={a} on_time mean: {on_time.mean():.3f}, frac=1: {(on_time==1).float().mean():.3f}")
+
                     all_profits[start:end, a] = profit_t.cpu()
                     all_on_time[start:end, a] = on_time.cpu()
 
@@ -678,14 +682,15 @@ class CB_Session(object):
         loss_history = []
 
         for epoch in range(self.env.args.ckpt_start_epoch, self.env.args.dm_epochs):
-            avg_loss, avg_profit_loss, avg_late_loss, avg_mi_loss, avg_ma_loss, train_time = self.dm_train_epoch_reward()
+            t0 = time.time()
+            avg_loss, avg_loss_ce, avg_loss_kl, train_acc = self.dm_train_epoch()
+            train_time = time.time() - t0
             loss_history.append(avg_loss)
 
             current_lr = scheduler_dm.get_last_lr()[0]
             info(f"[DM TRAIN] epoch {epoch}/{self.env.args.dm_epochs} "
-                 f"loss={avg_loss:.4f} (profit={avg_profit_loss:.4f} late={avg_late_loss:.4f} "
-                 f"mi={avg_mi_loss:.4f} ma={avg_ma_loss:.4f}) "
-                 f"lr={current_lr:.2e} time={train_time:.1f}s")
+                 f"loss={avg_loss:.4f} (ce={avg_loss_ce:.4f} kl={avg_loss_kl:.4f}) "
+                 f"train_acc={train_acc:.4f} lr={current_lr:.2e} time={train_time:.1f}s")
             scheduler_dm.step()
 
             if avg_loss != avg_loss:
@@ -693,8 +698,8 @@ class CB_Session(object):
                 break
 
             epoch_metrics = {
-                "dm/loss": avg_loss, "dm/loss_profit": avg_profit_loss, "dm/loss_late": avg_late_loss,
-                "dm/loss_mi": avg_mi_loss, "dm/loss_ma": avg_ma_loss, "dm/lr": current_lr,
+                "dm/loss": avg_loss, "dm/loss_ce": avg_loss_ce, "dm/loss_kl": avg_loss_kl,
+                "dm/train_acc": train_acc, "dm/lr": current_lr,
             }
 
             if epoch % eval_every == 0:

@@ -79,9 +79,18 @@ class CB_Session(object):
 
         label_dim =  len(feature_list.label[self.env.args.dataset])
 
+        if not hasattr(self, '_label_class_weights'):
+            self._label_class_weights = []
+            for i in range(label_dim):
+                targets = self.train_inputs[:, feature_dim + 1 + i].long().cpu()
+                nc = self.env.feature_classes[i]
+                counts = torch.bincount(targets.clamp(0, nc - 1), minlength=nc).float()
+                w = counts.sum() / (nc * counts.clamp_min(1))
+                self._label_class_weights.append(w.to(self.env.device))
+
         for input_id in tqdm(self.loader):
-            
-            
+
+
             ori_input = input_id.to(self.env.device)
             input_id = self.scaler.fit_transform(input_id)
             input_id = torch.FloatTensor(input_id).to(self.env.device)
@@ -90,7 +99,9 @@ class CB_Session(object):
             predicted_tokens = self.model(input_id[:,:feature_dim], ori_input[:,feature_dim].long(), ori_input[:,feature_dim+1:].long())
             total_loss = 0
             for i in range(label_dim):
-                classification_loss = torch.nn.CrossEntropyLoss()(predicted_tokens[i], ori_input[:, feature_dim+1 + i].long())
+                classification_loss = torch.nn.CrossEntropyLoss(
+                    weight=self._label_class_weights[i]
+                )(predicted_tokens[i], ori_input[:, feature_dim+1 + i].long())
                 total_loss += classification_loss
 
             loss = total_loss / label_dim

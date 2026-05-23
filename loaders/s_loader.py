@@ -88,6 +88,11 @@ class S_Loader(torch.utils.data.Dataset):
             test_inputs.to_csv(os.path.join(self.env.DATA_PATH, f'processed_{self.env.args.dataset}_test.csv'),index=None)
             
         
+        train_frac = getattr(self.env.args, 'train_frac', 1.0)
+        if train_frac < 1.0:
+            n = max(1, int(len(train_inputs) * train_frac))
+            train_inputs = train_inputs.sample(n=n, random_state=self.env.args.seed)
+
         self.return_classes_num(data, feature_list.label[self.env.args.dataset])
         self.inputs = torch.FloatTensor(data.values)
         self.train_inputs = torch.FloatTensor(train_inputs.values)

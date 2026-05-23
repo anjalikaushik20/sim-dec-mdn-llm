@@ -1,4 +1,6 @@
 import sys
+import os
+import glob
 import argparse
 import time
 import torch
@@ -45,6 +47,8 @@ def parse_args():
     parser.add_argument('--embed_dim', type=int, default=64)
     parser.add_argument('--decoder_num_layers', type=int, default=1)
     parser.add_argument('--encoder_num_layers', type=int, default=1)
+    parser.add_argument('--train_frac', type=float, default=1.0,
+        help='Fraction of training data to use. 1.0 = full dataset.')
     # parser.add_argument('--teacher_forcing_ratio', type=float, default=0.5)
 
 
@@ -68,6 +72,7 @@ def parse_args():
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--save', type=int, default=0)
+    parser.add_argument('--ckpt_dir', type=str, default=None, help='Override checkpoint save directory')
 
     return parser.parse_args()
 
@@ -87,8 +92,15 @@ my_env.feature_classes = my_loader.feature_classes
 # ----------------------------------- Model Init -----------------------------------------------------------
 info('--------------------------------Model Init--------------------------------')
 my_model = S_SimDec(my_env)
-if args.ckpt != None:
-    my_model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
+if args.ckpt is not None:
+    ckpt_path = args.ckpt
+    if os.path.isdir(ckpt_path):
+        pth_files = sorted(glob.glob(os.path.join(ckpt_path, "*.pth")), key=os.path.getmtime)
+        if not pth_files:
+            raise FileNotFoundError(f"No .pth files found in --ckpt directory: {ckpt_path}")
+        ckpt_path = pth_files[-1]
+        info(f"Auto-selected latest checkpoint: {ckpt_path}")
+    my_model.load_state_dict(torch.load(ckpt_path, map_location='cpu'))
 v_model = ValueNetwork(my_env)
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')

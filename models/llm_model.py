@@ -1,19 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from tools import feature_list
 
-# used the following models for experiments:
-# Qwen/Qwen2.5-1.5B-Instruct, 1.5B params
-# meta-llama/Llama-3.2-1B-Instruct, 1B params - no access
-# google/gemma-3-4b-it, 4B params
-# microsoft/Phi-4-mini-instruct, 4B params
-# Qwen/Qwen3-4B-Instruct-2507, 4B params
-# Qwen/Qwen3-1.7B, 1.7B params
-# Qwen/Qwen3-VL-Embedding-8B, 8B params
-# Qwen/Qwen3-30B-A3B-Instruct-2507, 30B params
 
-class LLMValueNetwork(nn.Module):
+class LLMAttnPoolNetwork(nn.Module):
     def __init__(self, env, model_name="google/gemma-3-1b-it", batch_size=64):
         super().__init__()
         self.env = env
@@ -28,7 +20,6 @@ class LLMValueNetwork(nn.Module):
         ]
         self.feature_dim = sum(self.group_dims)
 
-        # Flat list of feature names and per-group slice boundaries for serialization
         self.feature_names = (
             feature_list.product_info[dataset]
             + feature_list.order_info[dataset]
@@ -45,47 +36,52 @@ class LLMValueNetwork(nn.Module):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        # Left-padding keeps the last real token at position -1, which is what
-        # we read for hidden-state extraction and what generate() expects.
+        # Left-padding keeps the last real token at position -1.
         self.tokenizer.padding_side = "left"
 
-        # Load in float32 then move to device.
-        # float16/bfloat16 cause "CUDA driver error: invalid argument" on this
-        # hardware during both the forward pass (RMSNorm) and the .to() conversion.
-        # device_map is also avoided: it triggers caching_allocator_warmup() inside
-        # transformers which unconditionally allocates a float16 tensor and fails
-        # with the same error regardless of the model dtype.
+        # Load in float32 — same reasoning as llm_model.py (float16/bfloat16 CUDA errors
+        # on this hardware; device_map avoided for the same reason).
         self.backbone = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float32,
         )
         self.backbone.to(self.env.device)
         self.backbone.eval()
-        # Freeze the entire backbone first; lm_head is selectively unfrozen below.
         for p in self.backbone.parameters():
-            p.requires_grad = False
+            p.requires_grad = False  # entire backbone frozen; only pool_attn + cls_head train
 
-        # Token IDs for the digit strings "0"–"3" used as action labels.
-        self._action_token_ids = [
-            self.tokenizer.encode(str(i), add_special_tokens=False)[0]
-            for i in range(4)
+        hidden = self.backbone.config.hidden_size
+
+        # Shared: LM-head rows for action tokens "0"–"3" used by both heads.
+        action_token_ids = [
+            self.tokenizer.encode(t, add_special_tokens=False)[0]
+            for t in ["0", "1", "2", "3"]
         ]
+        with torch.no_grad():
+            action_rows = self.backbone.lm_head.weight[action_token_ids]  # [4, H]
 
-        # Detach lm_head weight from embed_tokens weight tying (Qwen3/Llama share the
-        # same Python object).  Without clone(), unfreezing lm_head also unfreezes
-        # embed_tokens, bloating the gradient and causing CUBLAS OOM.
-        lm = self.backbone.lm_head
-        lm.weight = nn.Parameter(lm.weight.detach().clone())
-        for p in lm.parameters():
-            p.requires_grad = True
+        # pool_attn: score tokens by similarity to mean action direction so attention
+        # concentrates on answer-like positions rather than uniform mean-pooling.
+        # (Zero-init → near-zero pooled vector → bias-only output, identical across
+        # all models. Action-direction init gives model-specific representations.)
+        self.pool_attn = nn.Linear(hidden, 1, bias=False)
+        with torch.no_grad():
+            self.pool_attn.weight.data.copy_(action_rows.mean(0).unsqueeze(0))
+        self.pool_attn.to(self.env.device)
+
+        # cls_head: initialized from per-action LM-head rows — the LLM's implicit
+        # zero-shot shipping policy read from next-token probabilities for "0"–"3".
+        self.cls_head = nn.Linear(hidden, 4)
+        with torch.no_grad():
+            self.cls_head.weight.data.copy_(action_rows)
+            self.cls_head.bias.data.zero_()
+        self.cls_head.to(self.env.device)
 
     def serialize_batch(self, raw_state: torch.Tensor) -> list:
-        """Convert a batch of raw (unscaled) feature vectors to natural-language prompt strings.
+        """Convert raw feature vectors to natural-language prompts.
 
-        Each feature group becomes a comma-separated key=value clause so the LLM
-        can use its pretrained knowledge of feature names like 'Order Quantity' or
-        'Discount %' to reason about the best shipping action.  The prompt ends with
-        an explicit action enumeration so the very next generated token is the answer.
+        Identical to LLMValueNetwork.serialize_batch — feature names in the prompt
+        activate the LLM's pre-trained semantic knowledge about shipping concepts.
         """
         raw_np = raw_state.detach().cpu().numpy()
         texts = []
@@ -103,17 +99,11 @@ class LLMValueNetwork(nn.Module):
             )
         return texts
 
-    def forward(self, raw_state: torch.Tensor) -> torch.Tensor:
-        """
-        Frozen transformer body → last-position hidden state → lm_head → [B, 4] logits.
+    def encode_batch(self, raw_state: torch.Tensor):
+        """Run only the frozen backbone. Returns (hidden [B,T,H], attention_mask [B,T]).
 
-        Only the lm_head is differentiable; the transformer body runs inside
-        torch.no_grad().  The 4 logits correspond to the token IDs for "0"–"3".
-
-        Args:
-            raw_state: [B, feature_dim] unscaled feature tensor
-        Returns:
-            [B, 4] float32 logits over the 4 shipping actions
+        Called once per sample during hidden-state caching. After caching, training
+        never calls this again — only forward_from_hidden() runs per epoch.
         """
         texts = self.serialize_batch(raw_state)
         enc = self.tokenizer(
@@ -126,10 +116,7 @@ class LLMValueNetwork(nn.Module):
         input_ids = enc["input_ids"].to(self.env.device)
         attention_mask = enc["attention_mask"].to(self.env.device)
 
-        # Run only the transformer body (no lm_head) to get hidden states.
-        # backbone.model is the base transformer for all CausalLM architectures
-        # (Qwen3ForCausalLM.model, LlamaForCausalLM.model, GemmaForCausalLM.model …).
-        base = getattr(self.backbone, "model", self.backbone)
+        base = getattr(self.backbone, "model", None) or getattr(self.backbone, "transformer", self.backbone)
         with torch.no_grad():
             out = base(
                 input_ids=input_ids,
@@ -137,54 +124,27 @@ class LLMValueNetwork(nn.Module):
                 use_cache=False,
                 return_dict=True,
             )
+        return out.last_hidden_state.float(), attention_mask  # [B,T,H], [B,T]
 
-        # With left-padding the last column is always a real token.
-        last_hidden = out.last_hidden_state[:, -1, :].float()   # [B, hidden]
-        full_logits = self.backbone.lm_head(last_hidden)         # [B, vocab_size]
-        return full_logits[:, self._action_token_ids]            # [B, 4]
+    def forward_from_hidden(self, hidden: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        """Apply pool_attn + cls_head to pre-computed hidden states. Returns [B, 4] logits.
 
-    @torch.no_grad()
-    def generate_action(self, raw_state: torch.Tensor) -> torch.Tensor:
+        This is the only path that runs during every training step after caching —
+        the backbone is never touched again.
         """
-        True LLM inference: autoregressively generate the action token and parse it.
+        scores = self.pool_attn(hidden).squeeze(-1)                      # [B, T]
+        scores = scores.masked_fill(attention_mask == 0, float("-inf"))
+        weights = torch.softmax(scores, dim=-1)                          # [B, T]
+        pooled = (hidden * weights.unsqueeze(-1)).sum(dim=1)             # [B, H]
+        return self.cls_head(pooled)                                     # [B, 4]
 
-        Uses the full backbone (transformer + frozen lm_head) via generate(), so the
-        complete sampling / decoding pipeline of the LLM is active.  No gradients
-        are computed here — inference only.
+    def forward(self, raw_state: torch.Tensor) -> torch.Tensor:
+        """Full pipeline: encode then classify. Used when no hidden-state cache is available.
 
         Args:
             raw_state: [B, feature_dim] unscaled feature tensor
         Returns:
-            [B] long tensor of action indices in {0, 1, 2, 3}
+            [B, 4] float32 logits over the 4 shipping actions
         """
-        texts = self.serialize_batch(raw_state)
-        enc = self.tokenizer(
-            texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
-        )
-        input_ids = enc["input_ids"].to(self.env.device)
-        attention_mask = enc["attention_mask"].to(self.env.device)
-
-        generated = self.backbone.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=8,
-            do_sample=False,
-            pad_token_id=self.tokenizer.pad_token_id,
-        )
-        new_tokens = generated[:, input_ids.shape[1]:]
-        decoded = self.tokenizer.batch_decode(new_tokens, skip_special_tokens=True)
-
-        actions = []
-        for text in decoded:
-            found = None
-            for ch in text.strip():
-                if ch in "0123":
-                    found = int(ch)
-                    break
-            actions.append(found if found is not None else 0)
-
-        return torch.tensor(actions, dtype=torch.long, device=self.env.device)
+        hidden, attention_mask = self.encode_batch(raw_state)
+        return self.forward_from_hidden(hidden, attention_mask)

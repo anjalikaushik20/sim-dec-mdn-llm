@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from tools.logger import info
 from sklearn.preprocessing import StandardScaler
 import torch.nn.functional as F
-from models.llm_model_attnpool_vocabalign import LLMAttnPoolNetwork
+from models.llm_model import LLMAttnPoolNetwork
 from sklearn.utils.validation import check_is_fitted
 
 class CB_Session(object):

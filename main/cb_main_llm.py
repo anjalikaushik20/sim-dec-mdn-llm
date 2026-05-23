@@ -10,8 +10,8 @@ from tools.logger import info
 from environments.environment import Env
 from loaders.s_loader import S_Loader
 from models.s_model import S_SimDec
-from models.llm_model_attnpool_vocabalign import LLMAttnPoolNetwork
-from sessions.cb_session_llm_attnpool_vocabalign import CB_Session
+from models.llm_model import LLMAttnPoolNetwork
+from sessions.cb_session_llm import CB_Session
 
 
 

@@ -20,21 +20,21 @@ python3 main/cb_main.py \
     --use_gpu 1 --device_id 2 --dataset DataCo --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 2 \
-    --ckpt exp_report/DataCo/ckpt/mythical-commander-352_epoch218.pth \
+    --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
     > "${BASE_OUT_DIR}/dataco.log" 2>&1
 
 python3 main/cb_main.py \
     --use_gpu 1 --device_id 2 --dataset GlobalStore --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 10 \
-    --ckpt exp_report/GlobalStore/ckpt/legendary-federation-353_epoch202.pth \
+    --ckpt output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
     > "${BASE_OUT_DIR}/globalstore.log" 2>&1
 
 python3 main/cb_main.py \
     --use_gpu 1 --device_id 2 --dataset OAS --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 50 \
-    --ckpt exp_report/OAS/ckpt/jedi-carrier-353_epoch19.pth \
+    --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \
     > "${BASE_OUT_DIR}/oas.log" 2>&1
 
 echo "All zero-shot runs complete. Logs saved to ${BASE_OUT_DIR}"

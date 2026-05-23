@@ -21,7 +21,7 @@ python3 main/cb_main_llm_attnpool.py \
     --use_gpu 1 --device_id 0 --dataset DataCo --train_mode 2 \
     --wandb 1 --hf_model_name "Qwen/Qwen3-0.6B" --save 0 \
     --dm_epochs 200 --train_frac 0.05 --otr_reward_coeff 2 --save 1 --ckpt_dir "${BASE_OUT_DIR}/ckpts" \
-    --ckpt exp_report/DataCo/ckpt/mythical-commander-352_epoch218.pth \
+    --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
     > "${BASE_OUT_DIR}/dataco_frac0.05.log" 2>&1
 
 

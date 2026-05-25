@@ -6,8 +6,8 @@ Usage:
 
 Example:
     python3 plot_zeroshot_compare.py \\
-        output/latest_output/zero_shot/20260521_130031 \\
-        output/latest_output/zero_shot/20260521_140045
+        /data/akaush39/sim-to-dec/output/latest_output/zero_shot/20260521_130031 \\
+        /data/akaush39/sim-to-dec/output/latest_output/zero_shot/20260521_140045
 
 Expects log files named {dataset}_{model_tag}.log inside each directory.
 Saves plots and a summary table in the first directory provided.

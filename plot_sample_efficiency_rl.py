@@ -5,7 +5,7 @@ Usage:
     python3 plot_sample_efficiency_rl.py <run_dir>
 
 Example:
-    python3 plot_sample_efficiency_rl.py output/latest_output/sample_efficiency/rl_baseline/20260520_182054
+    python3 plot_sample_efficiency_rl.py /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline/20260520_182054
 
 Expects log files named {dataset}_frac{frac}.log inside <run_dir>.
 Saves plots as sample_efficiency_rl_*.png in the same directory.

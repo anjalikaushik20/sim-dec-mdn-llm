@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--ablation_dir", type=str,
-                    default="output/latest_output/sample_efficiency/ablation")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ablation")
 parser.add_argument("--out_dir", type=str,
-                    default="output/latest_output/comparisons/ablations")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/comparisons/ablations")
 args = parser.parse_args()
 os.makedirs(args.out_dir, exist_ok=True)
 

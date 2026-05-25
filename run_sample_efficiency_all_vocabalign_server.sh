@@ -11,7 +11,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/sample_efficiency/all_vocabalign/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
@@ -64,7 +64,7 @@ do
                         --use_gpu 1 --device_id 1 --dataset DataCo --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 2 \
-                        --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
+                        --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
                         > "${LOG_FILE}" 2>&1
                     ;;
                 GlobalStore)
@@ -72,7 +72,7 @@ do
                         --use_gpu 1 --device_id 1 --dataset GlobalStore --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 10 \
-                        --ckpt output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
+                        --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
                         > "${LOG_FILE}" 2>&1
                     ;;
                 OAS)
@@ -80,7 +80,7 @@ do
                         --use_gpu 1 --device_id 1 --dataset OAS --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --dm_lr 0.00003 --otr_reward_coeff 50 \
-                        --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \
+                        --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \
                         > "${LOG_FILE}" 2>&1
                     ;;
             esac

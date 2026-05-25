@@ -26,21 +26,21 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--ind_llm_dir", type=str,
-                    default="output/latest_output/sample_efficiency/all_vocabalign",
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign",
                     help="In-distribution VocabAlign sample efficiency runs")
 parser.add_argument("--ood_llm_dir", type=str,
-                    default="output/latest_output/sample_efficiency/ood_vocabalign",
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ood_vocabalign",
                     help="OOD VocabAlign sample efficiency runs")
 parser.add_argument("--ind_rl_dir", type=str,
-                    default="output/latest_output/sample_efficiency/rl_baseline")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline")
 parser.add_argument("--ood_rl_dir", type=str,
-                    default="output/latest_output/sample_efficiency/ood_rl_baseline")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ood_rl_baseline")
 parser.add_argument("--ind_zs_dir", type=str,
-                    default="output/latest_output/zero_shot/vocabalign")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign")
 parser.add_argument("--ood_zs_dir", type=str,
-                    default="output/latest_output/zero_shot/ood_vocabalign")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/ood_vocabalign")
 parser.add_argument("--out_dir", type=str,
-                    default="output/latest_output/comparisons/ood_vs_ind")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/comparisons/ood_vs_ind")
 args = parser.parse_args()
 os.makedirs(args.out_dir, exist_ok=True)
 

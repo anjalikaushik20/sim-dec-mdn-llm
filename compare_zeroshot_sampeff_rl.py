@@ -17,11 +17,11 @@ Later --sampeff dirs take priority over earlier ones for the same model.
 
 Example:
     python3 compare_zeroshot_sampeff_rl.py \\
-        --zeroshot output/latest_output/zero_shot/vocabalign/20260523_030817 \\
-        --sampeff  output/latest_output/sample_efficiency/all_vocabalign/20260521_234202 \\
-        --sampeff  output/latest_output/sample_efficiency/all_vocabalign/20260523_045430 \\
-        --rl       output/latest_output/sample_efficiency/rl_baseline/20260520_182054 \\
-        --out      output/latest_output/comparisons/zeroshot_sampeff_vs_rl
+        --zeroshot /data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign/20260523_030817 \\
+        --sampeff  /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260521_234202 \\
+        --sampeff  /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260523_045430 \\
+        --rl       /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline/20260520_182054 \\
+        --out      /data/akaush39/sim-to-dec/output/latest_output/comparisons/zeroshot_sampeff_vs_rl
 """
 
 import sys

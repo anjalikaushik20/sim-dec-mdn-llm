@@ -15,10 +15,10 @@ Usage:
 
 Example:
     python3 plot_compare_rl_llm.py \\
-        --rl  output/latest_output/sample_efficiency/rl_baseline/20260520_182054 \\
-        --llm "Qwen3-1.7B attnpool":output/latest_output/sample_efficiency/qwen3-1.7B/20260520_200221 \\
-        --llm "Qwen3-1.7B vocabalign":output/latest_output/sample_efficiency/all_vocabalign/20260521_220458/qwen3-1.7B \\
-        --out output/latest_output/comparisons/rl_vs_llm
+        --rl  /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline/20260520_182054 \\
+        --llm "Qwen3-1.7B attnpool":/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/qwen3-1.7B/20260520_200221 \\
+        --llm "Qwen3-1.7B vocabalign":/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260521_220458/qwen3-1.7B \\
+        --out /data/akaush39/sim-to-dec/output/latest_output/comparisons/rl_vs_llm
 """
 
 import sys

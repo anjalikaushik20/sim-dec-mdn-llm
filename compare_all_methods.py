@@ -23,15 +23,15 @@ import matplotlib.pyplot as plt
 # ── CLI ────────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
 parser.add_argument("--out_dir", type=str,
-                    default="output/latest_output/comparisons/all_methods")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/comparisons/all_methods")
 parser.add_argument("--rl_dir", type=str,
-                    default="output/latest_output/sample_efficiency/rl_baseline")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline")
 parser.add_argument("--llm_dir", type=str,
-                    default="output/latest_output/sample_efficiency/all_vocabalign")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign")
 parser.add_argument("--ml_dir", type=str,
-                    default="output/latest_output/sample_efficiency/ml_baseline")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ml_baseline")
 parser.add_argument("--zero_dir", type=str,
-                    default="output/latest_output/zero_shot/vocabalign")
+                    default="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign")
 args = parser.parse_args()
 os.makedirs(args.out_dir, exist_ok=True)
 

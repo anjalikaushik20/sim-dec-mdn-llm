@@ -3,7 +3,7 @@ Analyze the distribution shift between DataCo_OOD Subset_1 (train) and Subset_2 
 
 Outputs:
   - Console summary table (feature means, stds, KL divergence)
-  - output/latest_output/comparisons/ood_analysis/
+  - /data/akaush39/sim-to-dec/output/latest_output/comparisons/ood_analysis/
       feature_shift.png    — per-feature mean/std comparison bar charts
       shipping_mode.png    — shipping mode class distribution comparison
       profit_distribution.png — profit distribution overlay
@@ -25,7 +25,7 @@ from scipy.stats import entropy
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SUBSET1 = os.path.join(ROOT, "datasets/DataCo_OOD/Subset_1.csv")
 SUBSET2 = os.path.join(ROOT, "datasets/DataCo_OOD/Subset_2.csv")
-OUT_DIR = os.path.join(ROOT, "output/latest_output/comparisons/ood_analysis")
+OUT_DIR = os.path.join(ROOT, "/data/akaush39/sim-to-dec/output/latest_output/comparisons/ood_analysis")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Features (from tools/feature_list.py for DataCo) ─────────────────────────

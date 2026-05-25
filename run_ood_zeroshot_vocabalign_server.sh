@@ -11,14 +11,14 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/zero_shot/ood_vocabalign/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/ood_vocabalign/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 echo "Zero-shot OOD evaluation (VocabAlign, dm_epochs=0) on DataCo_OOD"
 echo "Models: Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B, GPT-2, GPT-2 Medium, GPT-2 Large"
 echo "Sequential on GPU 0"
 
-DATACO_CKPT="output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+DATACO_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
 
 MODELS=(
     "Qwen/Qwen3-0.6B:qwen3-0.6B"

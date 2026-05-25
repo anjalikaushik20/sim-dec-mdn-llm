@@ -25,7 +25,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/sample_efficiency/all_vocabalign/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
@@ -59,15 +59,15 @@ launch_job() {
     case "${dataset}" in
         DataCo)
             extra_args="--otr_reward_coeff 2 \
-                --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+                --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
             ;;
         GlobalStore)
             extra_args="--otr_reward_coeff 10 \
-                --ckpt output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
+                --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
             ;;
         OAS)
             extra_args="--dm_lr 0.00003 --otr_reward_coeff 50 \
-                --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
+                --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
             ;;
     esac
 

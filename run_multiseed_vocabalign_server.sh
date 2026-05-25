@@ -11,7 +11,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/sample_efficiency/multiseed/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/multiseed/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
@@ -21,9 +21,9 @@ MODEL_TAG="qwen3-1.7B"
 echo "Multi-seed runs — VocabAlign (${MODEL_TAG}) × 3 seeds × all fracs × all datasets"
 echo "Seeds: 42 123 456 | dm_epochs=${DM_EPOCHS} | sequential on GPU 0"
 
-DATACO_CKPT="output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
-GS_CKPT="output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
-OAS_CKPT="output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
+DATACO_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+GS_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
+OAS_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
 
 total=0
 done_count=0

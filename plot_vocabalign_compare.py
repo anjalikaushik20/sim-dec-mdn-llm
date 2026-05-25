@@ -6,7 +6,7 @@ Usage:
 
 Example:
     python3 plot_vocabalign_compare.py \\
-        output/latest_output/sample_efficiency/all_vocabalign/20260521_220458
+        /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260521_220458
 
 Expects subdirectories named by model tag, each containing
 {dataset}_frac{frac}.log files.

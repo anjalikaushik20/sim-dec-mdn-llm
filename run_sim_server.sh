@@ -6,7 +6,7 @@ conda activate simenv
 export WANDB_API_KEY="$WB_LOGIN"
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/simulator/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/simulator/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 # DataCo

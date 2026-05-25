@@ -11,7 +11,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/sample_efficiency/ablation/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ablation/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
@@ -22,9 +22,9 @@ echo "Ablation study — VocabAlign (${MODEL_TAG}) on DataCo × GlobalStore × O
 echo "Fracs: 0.01 0.10 1.00 × 4 variants (full, no_vocab_init, mean_pool, hard_labels_only)"
 echo "dm_epochs=${DM_EPOCHS}, sequential on GPU 0"
 
-DATACO_CKPT="output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
-GS_CKPT="output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
-OAS_CKPT="output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
+DATACO_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+GS_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
+OAS_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
 
 total=0
 done_count=0

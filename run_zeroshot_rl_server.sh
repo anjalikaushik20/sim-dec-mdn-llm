@@ -10,7 +10,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/latest_output/zero_shot/rl_baseline/${RUN_ID}"
+BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/rl_baseline/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 echo "Zero-shot evaluation — RL baseline × {DataCo, GlobalStore, OAS}"
@@ -20,21 +20,21 @@ python3 main/cb_main.py \
     --use_gpu 1 --device_id 1 --dataset DataCo --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 2 \
-    --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
+    --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
     > "${BASE_OUT_DIR}/dataco.log" 2>&1
 
 python3 main/cb_main.py \
     --use_gpu 1 --device_id 1 --dataset GlobalStore --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 10 \
-    --ckpt output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
+    --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
     > "${BASE_OUT_DIR}/globalstore.log" 2>&1
 
 python3 main/cb_main.py \
     --use_gpu 1 --device_id 1 --dataset OAS --train_mode 2 \
     --wandb 1 --save 0 \
     --dm_epochs 0 --train_frac 1.0 --otr_reward_coeff 50 \
-    --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \
+    --ckpt /data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \
     > "${BASE_OUT_DIR}/oas.log" 2>&1
 
 echo "All zero-shot runs complete. Logs saved to ${BASE_OUT_DIR}"

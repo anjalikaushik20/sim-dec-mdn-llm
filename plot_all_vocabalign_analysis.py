@@ -37,10 +37,10 @@ def df_to_markdown(df):
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE = os.path.dirname(os.path.abspath(__file__))
 
-SAMPLE_RUN_LLM = os.path.join(BASE, "output/latest_output/sample_efficiency/all_vocabalign/20260521_220458")
-SAMPLE_RUN_RL  = os.path.join(BASE, "output/latest_output/sample_efficiency/rl_baseline/20260520_182054")
-ZEROSHOT_RUN   = os.path.join(BASE, "output/latest_output/zero_shot/vocabalign/20260523_030817")
-SAMPLE_OUT     = os.path.join(BASE, "output/latest_output/sample_efficiency/all_vocabalign/20260523_171937")
+SAMPLE_RUN_LLM = os.path.join(BASE, "/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260521_220458")
+SAMPLE_RUN_RL  = os.path.join(BASE, "/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline/20260520_182054")
+ZEROSHOT_RUN   = os.path.join(BASE, "/data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign/20260523_030817")
+SAMPLE_OUT     = os.path.join(BASE, "/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260523_171937")
 ZEROSHOT_OUT   = ZEROSHOT_RUN
 
 os.makedirs(SAMPLE_OUT, exist_ok=True)

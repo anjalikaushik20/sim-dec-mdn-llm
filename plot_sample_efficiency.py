@@ -152,8 +152,7 @@ def plot_all(results, run_dir, title_suffix=""):
         ax.set_xticklabels([frac_to_label(f) for f in all_fracs], fontsize=8)
 
     model_tag = os.path.basename(os.path.dirname(run_dir))
-    run_id = os.path.basename(run_dir)
-    fig.suptitle(f"Sample Efficiency — {model_tag}{title_suffix}\n{run_id}", fontsize=13, fontweight="bold")
+    fig.suptitle(f"Sample Efficiency — {model_tag}{title_suffix}", fontsize=13, fontweight="bold")
     plt.tight_layout()
 
     out_path = os.path.join(run_dir, "sample_efficiency.png")
@@ -165,7 +164,6 @@ def plot_all(results, run_dir, title_suffix=""):
 def plot_per_dataset(results, run_dir):
     """One figure per dataset with all 4 metrics as subplots."""
     model_tag = os.path.basename(os.path.dirname(run_dir))
-    run_id = os.path.basename(run_dir)
 
     for dataset, rows in sorted(results.items()):
         fracs  = [r[0] for r in rows]
@@ -189,7 +187,7 @@ def plot_per_dataset(results, run_dir):
             ax.set_xticklabels([frac_to_label(f) for f in fracs], fontsize=8)
             ax.grid(True, alpha=0.3)
 
-        fig.suptitle(f"{dset_label} — {model_tag}\n{run_id}", fontsize=12, fontweight="bold")
+        fig.suptitle(f"{dset_label} — {model_tag}", fontsize=12, fontweight="bold")
         plt.tight_layout()
 
         out_path = os.path.join(run_dir, f"sample_efficiency_{dataset}.png")

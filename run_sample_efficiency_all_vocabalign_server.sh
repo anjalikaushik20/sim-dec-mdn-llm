@@ -61,7 +61,7 @@ do
             case "${DATASET}" in
                 DataCo)
                     python3 main/cb_main_llm.py \
-                        --use_gpu 1 --device_id 0 --dataset DataCo --train_mode 2 \
+                        --use_gpu 1 --device_id 1 --dataset DataCo --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 2 \
                         --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
@@ -69,7 +69,7 @@ do
                     ;;
                 GlobalStore)
                     python3 main/cb_main_llm.py \
-                        --use_gpu 1 --device_id 0 --dataset GlobalStore --train_mode 2 \
+                        --use_gpu 1 --device_id 1 --dataset GlobalStore --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 10 \
                         --ckpt output/latest_output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth \
@@ -77,7 +77,7 @@ do
                     ;;
                 OAS)
                     python3 main/cb_main_llm.py \
-                        --use_gpu 1 --device_id 0 --dataset OAS --train_mode 2 \
+                        --use_gpu 1 --device_id 1 --dataset OAS --train_mode 2 \
                         --wandb 1 --hf_model_name "${HF_NAME}" --save 1 --ckpt_dir "${OUT_DIR}/ckpts" \
                         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --dm_lr 0.00003 --otr_reward_coeff 50 \
                         --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \

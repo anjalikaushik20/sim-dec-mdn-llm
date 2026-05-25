@@ -22,7 +22,7 @@ for FRAC in 0.01 0.05 0.10 0.25 0.50 1.0; do
 
     # DataCo → GPU 0
     python3 main/cb_main.py \
-        --use_gpu 1 --device_id 0 --dataset DataCo --train_mode 2 \
+        --use_gpu 1 --device_id 1 --dataset DataCo --train_mode 2 \
         --wandb 1 --save 1 --ckpt_dir "${BASE_OUT_DIR}/ckpts" \
         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 2 \
         --ckpt output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
@@ -38,7 +38,7 @@ for FRAC in 0.01 0.05 0.10 0.25 0.50 1.0; do
 
     # OAS → GPU 3
     python3 main/cb_main.py \
-        --use_gpu 1 --device_id 3 --dataset OAS --train_mode 2 \
+        --use_gpu 1 --device_id 1 --dataset OAS --train_mode 2 \
         --wandb 1 --save 1 --ckpt_dir "${BASE_OUT_DIR}/ckpts" \
         --dm_epochs "${DM_EPOCHS}" --train_frac "${FRAC}" --otr_reward_coeff 50 \
         --ckpt output/latest_output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth \

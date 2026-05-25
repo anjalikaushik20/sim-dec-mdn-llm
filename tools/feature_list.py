@@ -191,3 +191,9 @@ retrieva_index = {
         'GlobalStore': [len(product_info['GlobalStore'])+ len(order_info['GlobalStore']), len(product_info['GlobalStore'])+ len(order_info['GlobalStore'])+1],
         'OAS':[len(product_info['OAS'])+ len(order_info['OAS']), len(product_info['OAS'])+ len(order_info['OAS']) + len(customer_info['OAS'])],
         }
+
+# DataCo_OOD uses the same feature schema as DataCo (Subset_1/Subset_2 split of the same dataset)
+for _d in [numerical_features, categorical_features, date_features,
+           product_info, order_info, customer_info, shipping_info,
+           decision, label, profit, retrieva_index]:
+    _d['DataCo_OOD'] = _d['DataCo']

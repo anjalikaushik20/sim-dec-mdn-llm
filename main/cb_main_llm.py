@@ -70,6 +70,14 @@ def parse_args():
     parser.add_argument('--soft_label_temp', type=float, default=1.0,
         help='Temperature for soft reward targets. Lower = harder labels.')
 
+    # ----------------------- Ablation flags
+    parser.add_argument('--pool_init', type=str, default='vocab', choices=['vocab', 'random'],
+        help='Ablation: "vocab" = LM-head row init (VocabAlign default); "random" = Xavier init')
+    parser.add_argument('--pool_type', type=str, default='attention', choices=['attention', 'mean'],
+        help='Ablation: "attention" = learned attn pooling (default); "mean" = uniform mean pool')
+    parser.add_argument('--no_soft_labels', action='store_true', default=False,
+        help='Ablation: use only hard CE loss, removing the KL-div soft-label term')
+
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--save', type=int, default=0)

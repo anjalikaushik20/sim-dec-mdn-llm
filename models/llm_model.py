@@ -10,6 +10,9 @@ class LLMAttnPoolNetwork(nn.Module):
         super().__init__()
         self.env = env
         self.batch_size = batch_size
+        # Ablation flags (read from args with safe defaults so existing code paths still work)
+        self._pool_init = getattr(env.args, "pool_init", "vocab")   # "vocab" | "random"
+        self._pool_type = getattr(env.args, "pool_type", "attention")  # "attention" | "mean"
 
         dataset = self.env.args.dataset
         self.group_dims = [
@@ -66,15 +69,22 @@ class LLMAttnPoolNetwork(nn.Module):
         # all models. Action-direction init gives model-specific representations.)
         self.pool_attn = nn.Linear(hidden, 1, bias=False)
         with torch.no_grad():
-            self.pool_attn.weight.data.copy_(action_rows.mean(0).unsqueeze(0))
+            if self._pool_init == "random":
+                nn.init.xavier_uniform_(self.pool_attn.weight)
+            else:  # "vocab" — default VocabAlign
+                self.pool_attn.weight.data.copy_(action_rows.mean(0).unsqueeze(0))
         self.pool_attn.to(self.env.device)
 
         # cls_head: initialized from per-action LM-head rows — the LLM's implicit
         # zero-shot shipping policy read from next-token probabilities for "0"–"3".
         self.cls_head = nn.Linear(hidden, 4)
         with torch.no_grad():
-            self.cls_head.weight.data.copy_(action_rows)
-            self.cls_head.bias.data.zero_()
+            if self._pool_init == "random":
+                nn.init.xavier_uniform_(self.cls_head.weight)
+                nn.init.zeros_(self.cls_head.bias)
+            else:  # "vocab" — default VocabAlign
+                self.cls_head.weight.data.copy_(action_rows)
+                self.cls_head.bias.data.zero_()
         self.cls_head.to(self.env.device)
 
     def serialize_batch(self, raw_state: torch.Tensor) -> list:
@@ -132,11 +142,16 @@ class LLMAttnPoolNetwork(nn.Module):
         This is the only path that runs during every training step after caching —
         the backbone is never touched again.
         """
-        scores = self.pool_attn(hidden).squeeze(-1)                      # [B, T]
-        scores = scores.masked_fill(attention_mask == 0, float("-inf"))
-        weights = torch.softmax(scores, dim=-1)                          # [B, T]
-        pooled = (hidden * weights.unsqueeze(-1)).sum(dim=1)             # [B, H]
-        return self.cls_head(pooled)                                     # [B, 4]
+        if self._pool_type == "mean":
+            # Ablation: uniform mean over valid tokens, no learned attention weights
+            mask_f = attention_mask.float().unsqueeze(-1)          # [B, T, 1]
+            pooled = (hidden * mask_f).sum(dim=1) / mask_f.sum(dim=1).clamp_min(1.0)
+        else:  # "attention" — default VocabAlign
+            scores = self.pool_attn(hidden).squeeze(-1)                      # [B, T]
+            scores = scores.masked_fill(attention_mask == 0, float("-inf"))
+            weights = torch.softmax(scores, dim=-1)                          # [B, T]
+            pooled = (hidden * weights.unsqueeze(-1)).sum(dim=1)             # [B, H]
+        return self.cls_head(pooled)                                         # [B, 4]
 
     def forward(self, raw_state: torch.Tensor) -> torch.Tensor:
         """Full pipeline: encode then classify. Used when no hidden-state cache is available.

@@ -1,0 +1,153 @@
+nohup: ignoring input
+==========================================
+ Sample efficiency — all models (vocabalign)
+ dm_epochs=200  run_id=20260523_172012
+ GPU: 0 (H100 NVL 95.8 GB)
+ Jobs: 6 models × 6 fracs × 3 datasets = 108
+==========================================
+
+┌─ gpt2  (parallelism=18)  2026-05-23 17:20:12 ─────────
+  [1/18] → gpt2  DataCo  frac=0.01  17:20:12
+  [2/18] → gpt2  GlobalStore  frac=0.01  17:20:13
+  [3/18] → gpt2  OAS  frac=0.01  17:20:14
+  [4/18] → gpt2  DataCo  frac=0.05  17:20:15
+  [5/18] → gpt2  GlobalStore  frac=0.05  17:20:16
+  [6/18] → gpt2  OAS  frac=0.05  17:20:17
+  [7/18] → gpt2  DataCo  frac=0.10  17:20:18
+  [8/18] → gpt2  GlobalStore  frac=0.10  17:20:19
+  [9/18] → gpt2  OAS  frac=0.10  17:20:20
+  [10/18] → gpt2  DataCo  frac=0.25  17:20:21
+  [11/18] → gpt2  GlobalStore  frac=0.25  17:20:22
+  [12/18] → gpt2  OAS  frac=0.25  17:20:23
+  [13/18] → gpt2  DataCo  frac=0.50  17:20:24
+  [14/18] → gpt2  GlobalStore  frac=0.50  17:20:25
+  [15/18] → gpt2  OAS  frac=0.50  17:20:26
+  [16/18] → gpt2  DataCo  frac=1.00  17:20:27
+  [17/18] → gpt2  GlobalStore  frac=1.00  17:20:28
+  [18/18] → gpt2  OAS  frac=1.00  17:20:29
+└─ gpt2 DONE (all 18 OK)  18:14:51
+
+┌─ gpt2-medium  (parallelism=16)  2026-05-23 18:14:51 ─────────
+  [1/18] → gpt2-medium  DataCo  frac=0.01  18:14:51
+  [2/18] → gpt2-medium  GlobalStore  frac=0.01  18:14:52
+  [3/18] → gpt2-medium  OAS  frac=0.01  18:14:53
+  [4/18] → gpt2-medium  DataCo  frac=0.05  18:14:54
+  [5/18] → gpt2-medium  GlobalStore  frac=0.05  18:14:55
+  [6/18] → gpt2-medium  OAS  frac=0.05  18:14:56
+  [7/18] → gpt2-medium  DataCo  frac=0.10  18:14:57
+  [8/18] → gpt2-medium  GlobalStore  frac=0.10  18:14:58
+  [9/18] → gpt2-medium  OAS  frac=0.10  18:14:59
+  [10/18] → gpt2-medium  DataCo  frac=0.25  18:15:00
+  [11/18] → gpt2-medium  GlobalStore  frac=0.25  18:15:01
+  [12/18] → gpt2-medium  OAS  frac=0.25  18:15:02
+  [13/18] → gpt2-medium  DataCo  frac=0.50  18:15:03
+  [14/18] → gpt2-medium  GlobalStore  frac=0.50  18:15:04
+  [15/18] → gpt2-medium  OAS  frac=0.50  18:15:05
+  [16/18] → gpt2-medium  DataCo  frac=1.00  18:15:06
+  [17/18] → gpt2-medium  GlobalStore  frac=1.00  18:26:00
+  [18/18] → gpt2-medium  OAS  frac=1.00  18:28:06
+└─ gpt2-medium DONE (all 18 OK)  20:09:08
+
+┌─ gpt2-large  (parallelism=12)  2026-05-23 20:09:08 ─────────
+  [1/18] → gpt2-large  DataCo  frac=0.01  20:09:08
+  [2/18] → gpt2-large  GlobalStore  frac=0.01  20:09:09
+  [3/18] → gpt2-large  OAS  frac=0.01  20:09:10
+  [4/18] → gpt2-large  DataCo  frac=0.05  20:09:11
+  [5/18] → gpt2-large  GlobalStore  frac=0.05  20:09:12
+  [6/18] → gpt2-large  OAS  frac=0.05  20:09:13
+  [7/18] → gpt2-large  DataCo  frac=0.10  20:09:14
+  [8/18] → gpt2-large  GlobalStore  frac=0.10  20:09:15
+  [9/18] → gpt2-large  OAS  frac=0.10  20:09:16
+  [10/18] → gpt2-large  DataCo  frac=0.25  20:09:17
+  [11/18] → gpt2-large  GlobalStore  frac=0.25  20:09:18
+  [12/18] → gpt2-large  OAS  frac=0.25  20:09:19
+  [13/18] → gpt2-large  DataCo  frac=0.50  20:21:28
+  [14/18] → gpt2-large  GlobalStore  frac=0.50  20:27:52
+  [15/18] → gpt2-large  OAS  frac=0.50  20:28:07
+  [16/18] → gpt2-large  DataCo  frac=1.00  20:29:11
+  [17/18] → gpt2-large  GlobalStore  frac=1.00  20:33:24
+  [18/18] → gpt2-large  OAS  frac=1.00  20:38:58
+└─ gpt2-large DONE (all 18 OK)  23:18:34
+
+┌─ qwen3-0.6B  (parallelism=12)  2026-05-23 23:18:34 ─────────
+  [1/18] → qwen3-0.6B  DataCo  frac=0.01  23:18:34
+  [2/18] → qwen3-0.6B  GlobalStore  frac=0.01  23:18:35
+  [3/18] → qwen3-0.6B  OAS  frac=0.01  23:18:36
+  [4/18] → qwen3-0.6B  DataCo  frac=0.05  23:18:37
+  [5/18] → qwen3-0.6B  GlobalStore  frac=0.05  23:18:38
+  [6/18] → qwen3-0.6B  OAS  frac=0.05  23:18:39
+  [7/18] → qwen3-0.6B  DataCo  frac=0.10  23:18:40
+  [8/18] → qwen3-0.6B  GlobalStore  frac=0.10  23:18:41
+  [9/18] → qwen3-0.6B  OAS  frac=0.10  23:18:42
+  [10/18] → qwen3-0.6B  DataCo  frac=0.25  23:18:43
+  [11/18] → qwen3-0.6B  GlobalStore  frac=0.25  23:18:44
+  [12/18] → qwen3-0.6B  OAS  frac=0.25  23:18:45
+  [13/18] → qwen3-0.6B  DataCo  frac=0.50  23:26:28
+  [14/18] → qwen3-0.6B  GlobalStore  frac=0.50  23:29:18
+  [15/18] → qwen3-0.6B  OAS  frac=0.50  23:34:54
+  [16/18] → qwen3-0.6B  DataCo  frac=1.00  23:39:16
+  [17/18] → qwen3-0.6B  GlobalStore  frac=1.00  23:42:38
+  [18/18] → qwen3-0.6B  OAS  frac=1.00  23:42:55
+└─ qwen3-0.6B DONE (all 18 OK)  01:51:11
+
+┌─ qwen3-1.7B  (parallelism=6)  2026-05-24 01:51:11 ─────────
+  [1/18] → qwen3-1.7B  DataCo  frac=0.01  01:51:11
+  [2/18] → qwen3-1.7B  GlobalStore  frac=0.01  01:51:12
+  [3/18] → qwen3-1.7B  OAS  frac=0.01  01:51:13
+  [4/18] → qwen3-1.7B  DataCo  frac=0.05  01:51:14
+  [5/18] → qwen3-1.7B  GlobalStore  frac=0.05  01:51:15
+  [6/18] → qwen3-1.7B  OAS  frac=0.05  01:51:16
+  [7/18] → qwen3-1.7B  DataCo  frac=0.10  02:00:20
+  [8/18] → qwen3-1.7B  GlobalStore  frac=0.10  02:02:19
+  [9/18] → qwen3-1.7B  OAS  frac=0.10  02:12:57
+  [10/18] → qwen3-1.7B  DataCo  frac=0.25  02:20:25
+  [11/18] → qwen3-1.7B  GlobalStore  frac=0.25  02:25:51
+  [12/18] → qwen3-1.7B  OAS  frac=0.25  02:42:12
+  [13/18] → qwen3-1.7B  DataCo  frac=0.50  03:13:14
+  [14/18] → qwen3-1.7B  GlobalStore  frac=0.50  03:13:38
+  [15/18] → qwen3-1.7B  OAS  frac=0.50  03:31:28
+  [16/18] → qwen3-1.7B  DataCo  frac=1.00  03:51:51
+  [17/18] → qwen3-1.7B  GlobalStore  frac=1.00  04:12:04
+  [18/18] → qwen3-1.7B  OAS  frac=1.00  04:23:15
+└─ qwen3-1.7B DONE (all 18 OK)  07:45:35
+
+┌─ qwen3-4B  (parallelism=4)  2026-05-24 07:45:35 ─────────
+  [1/18] → qwen3-4B  DataCo  frac=0.01  07:45:35
+  [2/18] → qwen3-4B  GlobalStore  frac=0.01  07:45:36
+  [3/18] → qwen3-4B  OAS  frac=0.01  07:45:37
+  [4/18] → qwen3-4B  DataCo  frac=0.05  07:45:38
+  [5/18] → qwen3-4B  GlobalStore  frac=0.05  08:00:58
+  [6/18] → qwen3-4B  OAS  frac=0.05  08:20:02
+  [7/18] → qwen3-4B  DataCo  frac=0.10  08:38:47
+  [8/18] → qwen3-4B  GlobalStore  frac=0.10  08:41:55
+  [9/18] → qwen3-4B  OAS  frac=0.10  09:34:52
+  [10/18] → qwen3-4B  DataCo  frac=0.25  09:58:01
+  [11/18] → qwen3-4B  GlobalStore  frac=0.25  10:51:04
+  [12/18] → qwen3-4B  OAS  frac=0.25  11:13:31
+  [13/18] → qwen3-4B  DataCo  frac=0.50  11:48:28
+  [14/18] → qwen3-4B  GlobalStore  frac=0.50  11:57:31
+  [15/18] → qwen3-4B  OAS  frac=0.50  12:35:31
+  [16/18] → qwen3-4B  DataCo  frac=1.00  13:18:38
+  [17/18] → qwen3-4B  GlobalStore  frac=1.00  13:18:39
+  [18/18] → qwen3-4B  OAS  frac=1.00  13:18:40
+└─ qwen3-4B DONE (all 18 OK)  16:04:02
+
+==========================================
+ All 108 jobs complete.
+ Logs → output/latest_output/sample_efficiency/all_vocabalign/20260523_172012
+==========================================
+:36
+  [11/18] → qwen3-4B  GlobalStore  frac=0.25  17:22:38
+  [12/18] → qwen3-4B  OAS  frac=0.25  17:22:39
+  [13/18] → qwen3-4B  DataCo  frac=0.50  17:22:44
+  [14/18] → qwen3-4B  GlobalStore  frac=0.50  17:22:45
+  [15/18] → qwen3-4B  OAS  frac=0.50  17:22:51
+  [16/18] → qwen3-4B  DataCo  frac=1.00  17:22:52
+  [17/18] → qwen3-4B  GlobalStore  frac=1.00  17:22:54
+  [18/18] → qwen3-4B  OAS  frac=1.00  17:22:59
+└─ qwen3-4B DONE (all 18 OK)  17:23:09
+
+==========================================
+ All 108 jobs complete.
+ Logs → output/latest_output/sample_efficiency/all_vocabalign/20260523_171937
+==========================================

@@ -464,9 +464,14 @@ class CB_Session(object):
             logits = self.value_network.forward_from_hidden(hidden_b, mask_b)  # [B, 4]
 
             loss_ce = F.cross_entropy(logits, a_star_batch, weight=self.class_weights)
-            loss_kl = F.kl_div(F.log_softmax(logits, dim=1), log_soft_batch,
-                               reduction='batchmean', log_target=True)
-            loss = 0.5 * loss_ce + 0.5 * loss_kl
+            if getattr(self.env.args, "no_soft_labels", False):
+                # Ablation: hard CE only — no KL-div soft-label term
+                loss = loss_ce
+                loss_kl = torch.zeros(1)
+            else:
+                loss_kl = F.kl_div(F.log_softmax(logits, dim=1), log_soft_batch,
+                                   reduction='batchmean', log_target=True)
+                loss = 0.5 * loss_ce + 0.5 * loss_kl
 
             if not torch.isfinite(loss):
                 info(f"[NaN] loss={loss.item():.4f} ce={loss_ce.item():.4f} "

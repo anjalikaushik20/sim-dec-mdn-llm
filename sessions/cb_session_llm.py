@@ -280,70 +280,6 @@ class CB_Session(object):
         all_rewards = torch.nan_to_num(all_rewards, nan=0.0)
         return all_rewards.argmax(dim=1).long()
 
-    def precompute_hidden_states(self):
-        """Run the frozen backbone once over all splits and cache the results on CPU.
-
-        After this returns, dm_train_epoch() and dm_test() never call the backbone
-        again — they index into these caches and run only pool_attn + cls_head.
-
-        Cache layout per split:
-            {split}_hidden_cache : [N, T_max, H]  float16  (CPU)
-            {split}_mask_cache   : [N, T_max]      bool     (CPU)
-        """
-        self.value_network.eval()
-
-        feature_dim = len(
-            feature_list.product_info[self.env.args.dataset]
-            + feature_list.order_info[self.env.args.dataset]
-            + feature_list.customer_info[self.env.args.dataset]
-            + feature_list.shipping_info[self.env.args.dataset]
-        )
-        B = int(self.env.args.batch_size)
-
-        # Skip train split when dm_epochs=0 — train cache is only consumed by
-        # dm_train_epoch(), which never runs in that case.
-        splits = [('val', self.val_inputs), ('test', self.test_inputs)]
-        if self.env.args.dm_epochs > 0:
-            splits = [('train', self.train_inputs)] + splits
-        for split_name, inputs in splits:
-            if isinstance(inputs, torch.Tensor):
-                X_np = inputs.detach().cpu().numpy().astype(np.float32)
-            else:
-                X_np = np.asarray(inputs, dtype=np.float32)
-
-            N = X_np.shape[0]
-            all_hidden = []
-            all_masks  = []
-
-            info(f"[CACHE] Encoding {split_name} split ({N} samples)...")
-            with torch.no_grad():
-                for start in range(0, N, B):
-                    end = min(start + B, N)
-                    raw = torch.from_numpy(X_np[start:end, :feature_dim]).to(self.env.device)
-                    h, m = self.value_network.encode_batch(raw)   # [bs,T,H], [bs,T]
-                    all_hidden.append(h.cpu().half())              # float16 to save RAM
-                    all_masks.append(m.cpu())
-
-            T_max = max(h.shape[1] for h in all_hidden)
-            H     = all_hidden[0].shape[2]
-            hidden_cache = torch.zeros(N, T_max, H, dtype=torch.float16)
-            mask_cache   = torch.zeros(N, T_max, dtype=torch.bool)
-
-            idx = 0
-            for h, m in zip(all_hidden, all_masks):
-                bs, T, _ = h.shape
-                hidden_cache[idx:idx + bs, :T, :] = h
-                mask_cache[idx:idx + bs, :T]       = m.bool()
-                idx += bs
-
-            mb = hidden_cache.numel() * 2 / 1e6
-            info(f"[CACHE] {split_name}: {N}×{T_max}×{H} = {mb:.0f} MB (float16, CPU)")
-            setattr(self, f'{split_name}_hidden_cache', hidden_cache)
-            setattr(self, f'{split_name}_mask_cache',   mask_cache)
-
-        torch.cuda.empty_cache()
-        info("[CACHE] Hidden-state caching complete.")
-
     def train_epoch(self):
         t = time.time()
         self.model.train()
@@ -440,7 +376,12 @@ class CB_Session(object):
         self.model.eval()
         self.value_network.train()
 
-        N = self.train_hidden_cache.shape[0]
+        if not hasattr(self, '_train_X_np'):
+            if isinstance(self.train_inputs, torch.Tensor):
+                self._train_X_np = self.train_inputs.detach().cpu().numpy().astype(np.float32)
+            else:
+                self._train_X_np = np.asarray(self.train_inputs, dtype=np.float32)
+        N = self._train_X_np.shape[0]
         B = int(min(self.env.args.batch_size, N))
 
         perm = torch.randperm(N)
@@ -455,9 +396,12 @@ class CB_Session(object):
         for start in range(0, N, B):
             indices = perm[start:start + B]
 
-            # Fetch cached hidden states — backbone never runs during training
-            hidden_b = self.train_hidden_cache[indices].to(self.env.device).float()
-            mask_b   = self.train_mask_cache[indices].to(self.env.device)
+            raw = torch.from_numpy(
+                self._train_X_np[indices.numpy(), :self.value_network.feature_dim]
+            ).to(self.env.device)
+            with torch.no_grad():
+                hidden_b, mask_b = self.value_network.encode_batch(raw)
+            hidden_b = hidden_b.float()
             a_star_batch   = self.best_action_labels[indices].to(self.env.device)
             log_soft_batch = self.log_soft_labels[indices].to(self.env.device)
 
@@ -565,8 +509,10 @@ class CB_Session(object):
             bs = len(indices)
             idx_np = indices.numpy()
 
-            hidden_b = self.train_hidden_cache[indices].to(self.env.device).float()
-            mask_b   = self.train_mask_cache[indices].to(self.env.device)
+            raw_b = torch.from_numpy(train_X_np[idx_np, :feature_dim]).to(self.env.device)
+            with torch.no_grad():
+                hidden_b, mask_b = self.value_network.encode_batch(raw_b)
+            hidden_b = hidden_b.float()
 
             ori_b   = torch.from_numpy(train_X_np[idx_np]).to(self.env.device)
             state_b = torch.from_numpy(train_Xs[idx_np, :feature_dim]).to(self.env.device)
@@ -642,9 +588,7 @@ class CB_Session(object):
         """Attention-pool head fine-tuning with periodic val evaluation and early stopping."""
         info("[LABEL] Pre-computing best-action labels via FAISS profit lookup + simulator...")
         self.precompute_best_actions()
-        info("[CACHE] Pre-computing frozen backbone hidden states for all splits...")
-        self.precompute_hidden_states()
-        info(f"[DM TRAIN] Precomputation complete. Fine-tuning attnpool head for {self.env.args.dm_epochs} epochs.")
+        info(f"[DM TRAIN] Fine-tuning attnpool head for {self.env.args.dm_epochs} epochs (backbone runs live each step).")
 
         scheduler_dm = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer_dm, T_max=self.env.args.dm_epochs, eta_min=1e-6
@@ -807,8 +751,6 @@ class CB_Session(object):
         time_sum = 0
         time_count = 0
 
-        hidden_cache_s = self.val_hidden_cache  if mode in ("val", "ori") else self.test_hidden_cache
-        mask_cache_s   = self.val_mask_cache    if mode in ("val", "ori") else self.test_mask_cache
         N_eval = ori_input.shape[0]  # already limited by dm_eval_limit above
 
         with torch.no_grad():
@@ -816,13 +758,11 @@ class CB_Session(object):
                 decision_indices = input_id[:, feature_dim].long()
                 decision_prob = F.one_hot(decision_indices, num_classes=4).float().to(self.env.device)
             else:
-                # Fetch cached hidden states — backbone never runs during eval
                 _bs = int(getattr(self.env.args, "batch_size", 64))
                 chunks = []
                 for s in range(0, N_eval, _bs):
-                    h = hidden_cache_s[s:s + _bs].to(self.env.device).float()
-                    m = mask_cache_s[s:s + _bs].to(self.env.device)
-                    chunks.append(self.value_network.forward_from_hidden(h, m).argmax(dim=1))
+                    h, m = self.value_network.encode_batch(raw_state[s:s + _bs])
+                    chunks.append(self.value_network.forward_from_hidden(h.float(), m).argmax(dim=1))
                 action = torch.cat(chunks, dim=0)
                 decision_prob = F.one_hot(action, num_classes=4).float()
 

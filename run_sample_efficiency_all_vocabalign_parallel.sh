@@ -156,12 +156,12 @@ run_model_group() {
 #   qwen3-1.7B  ~14 GB/job  → floor(49/14)=3 × 4 = 12
 #   qwen3-4B    ~22 GB/job  → floor(49/22)=2 × 4 =  8
 
-run_model_group "gpt2"        "gpt2"             18   #  3 GB × 18, ~5 jobs/GPU
-run_model_group "gpt2-medium" "gpt2-medium"      18   #  5 GB × 18, ~5 jobs/GPU
-run_model_group "gpt2-large"  "gpt2-large"       18   #  7 GB × 18, ~5 jobs/GPU
 run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 18   #  7 GB × 18, ~5 jobs/GPU
+run_model_group "gpt2"        "gpt2"             18   #  3 GB × 18, ~5 jobs/GPU
 run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 12   # 14 GB × 12, 3 jobs/GPU
+run_model_group "gpt2-medium" "gpt2-medium"      18   #  5 GB × 18, ~5 jobs/GPU
 run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"    8   # 22 GB ×  8, 2 jobs/GPU
+run_model_group "gpt2-large"  "gpt2-large"       18   #  7 GB × 18, ~5 jobs/GPU
 
 echo ""
 echo "=========================================="

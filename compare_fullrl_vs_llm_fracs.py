@@ -3,29 +3,25 @@ Compare RL full-training (single reference) vs VocabAlign LLM at all training fr
 
 RL is taken at frac=1.0 (or highest available frac if 1.0 is missing).
 LLM includes zero-shot (frac=0) + all sample-efficiency fractions.
-
-Usage:
-    python3 compare_fullrl_vs_llm_fracs.py \\
-        --zeroshot <zero_shot_dir> \\
-        --sampeff  <sampeff_dir> [--sampeff <dir2> ...] \\
-        --rl       <rl_run_dir> \\
-        --out      <output_dir>
-
-Example:
-    python3 compare_fullrl_vs_llm_fracs.py \\
-        --zeroshot /data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign/20260523_030817 \\
-        --sampeff  /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260521_234202 \\
-        --sampeff  /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign/20260523_045430 \\
-        --rl       /data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline/20260520_182054 \\
-        --out      /data/akaush39/sim-to-dec/output/latest_output/comparisons/fullrl_vs_llm_fracs
 """
 
-import sys
 import os
 import re
 import glob
 import argparse
 from collections import defaultdict
+
+# ── Hardcoded paths ───────────────────────────────────────────────────────────
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--GPU", type=int, default=0)
+_args = parser.parse_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = str(_args.GPU)
+
+ZEROSHOT_DIR = "output/decision_maker/zeroshot/20260529_172517"
+SAMPEFF_DIRS = ["output/decision_maker/all_fracs"]
+RL_DIR       = "output/decision_maker/rl/20260529_232419"
+OUT_DIR      = "output/decision_maker/comparisons/fullrl_vs_llm_fracs"
 
 import matplotlib
 matplotlib.use("Agg")
@@ -59,8 +55,8 @@ METRICS = [("profit", "Profit"), ("on_time", "On-Time Ratio"), ("total", "Profit
 
 # ── Parsers ───────────────────────────────────────────────────────────────────
 
-_ZS_PAT = re.compile(r"([a-z]+)_([a-zA-Z0-9.\-]+)\.log$")
-_SE_PAT  = re.compile(r"([a-z]+)_frac([\d.]+)\.log$")
+_ZS_DS_PAT = re.compile(r"([a-z]+)\.log$")
+_SE_PAT    = re.compile(r"([a-z]+)_frac([\d.]+)\.log$")
 
 
 def _parse_llm(path):
@@ -90,17 +86,22 @@ def _parse_rl(path):
 # ── Loaders ───────────────────────────────────────────────────────────────────
 
 def load_zeroshot(zs_dir):
+    """Handles {model_tag}/{dataset}.log subdir structure."""
     data = defaultdict(dict)
-    for path in glob.glob(os.path.join(zs_dir, "*.log")):
-        m = _ZS_PAT.match(os.path.basename(path))
-        if not m:
+    for model_tag in sorted(os.listdir(zs_dir)):
+        model_dir = os.path.join(zs_dir, model_tag)
+        if not os.path.isdir(model_dir):
             continue
-        ds, model = m.group(1), m.group(2)
-        metrics = _parse_llm(path)
-        if metrics is None:
-            print(f"  [zeroshot skip] {os.path.basename(path)}")
-            continue
-        data[model][ds] = metrics
+        for path in glob.glob(os.path.join(model_dir, "*.log")):
+            m = _ZS_DS_PAT.match(os.path.basename(path))
+            if not m:
+                continue
+            ds = m.group(1)
+            metrics = _parse_llm(path)
+            if metrics is None:
+                print(f"  [zeroshot skip] {model_tag}/{os.path.basename(path)}")
+                continue
+            data[model_tag][ds] = metrics
     return dict(data)
 
 
@@ -417,29 +418,31 @@ def plot_grouped_fracs(zs_data, se_data, rl_full, out_dir):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--zeroshot", required=True)
-    parser.add_argument("--sampeff",  action="append", required=True)
-    parser.add_argument("--rl",       required=True)
-    parser.add_argument("--out",      required=True)
-    args = parser.parse_args()
+    for d in [ZEROSHOT_DIR, RL_DIR] + SAMPEFF_DIRS:
+        if not os.path.isdir(d):
+            print(f"Error: directory not found: {d}")
+            raise SystemExit(1)
 
-    os.makedirs(args.out, exist_ok=True)
+    os.makedirs(OUT_DIR, exist_ok=True)
 
-    print(f"Loading zero-shot:      {args.zeroshot}")
-    zs_data = load_zeroshot(args.zeroshot)
+    print(f"Zero-shot dir  : {ZEROSHOT_DIR}")
+    print(f"Sample-eff dirs: {SAMPEFF_DIRS}")
+    print(f"RL dir         : {RL_DIR}")
+    print(f"Output dir     : {OUT_DIR}")
+
+    print(f"\nLoading zero-shot...")
+    zs_data = load_zeroshot(ZEROSHOT_DIR)
     print(f"  Models: {sorted_models(zs_data.keys())}")
 
-    print(f"Loading sample efficiency: {args.sampeff}")
-    se_data = load_sampeff_dirs(args.sampeff)
+    print(f"Loading sample efficiency...")
+    se_data = load_sampeff_dirs(SAMPEFF_DIRS)
     print(f"  Models: {sorted_models(se_data.keys())}")
     for m, ds_map in se_data.items():
         fracs = sorted({r[0] for rows in ds_map.values() for r in rows})
         print(f"    {MODEL_LABELS.get(m, m)}: {fracs}")
 
-    print(f"Loading RL (full training): {args.rl}")
-    rl_full = load_rl_full(args.rl)
+    print(f"Loading RL (full training)...")
+    rl_full = load_rl_full(RL_DIR)
     print("  RL full-training reference:")
     for ds, row in sorted(rl_full.items()):
         p, o = row[1], row[2]
@@ -447,12 +450,12 @@ def main():
               f"profit={p:.4f}  on_time={o:.4f}  total={p+o:.4f}")
 
     print("\n--- Summary Table ---")
-    build_table(zs_data, se_data, rl_full, args.out)
+    build_table(zs_data, se_data, rl_full, OUT_DIR)
 
     print("\n--- Generating plots ---")
-    plot_per_dataset(zs_data, se_data, rl_full, args.out)
-    plot_per_model(zs_data, se_data, rl_full, args.out)
-    plot_grouped_fracs(zs_data, se_data, rl_full, args.out)
+    plot_per_dataset(zs_data, se_data, rl_full, OUT_DIR)
+    plot_per_model(zs_data, se_data, rl_full, OUT_DIR)
+    plot_grouped_fracs(zs_data, se_data, rl_full, OUT_DIR)
 
     print("\nDone.")
 

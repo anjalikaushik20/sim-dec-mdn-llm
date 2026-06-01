@@ -29,6 +29,10 @@ def parse_args():
     parser.add_argument('--ckpt_start_epoch', type=int, default=0)
 
     parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD'])
+    parser.add_argument('--value_network_ckpt', type=str, default=None,
+        help='Path to a saved attnpool adapter (.pth) from a prior dm_train run. '
+             'Loads pool_attn/cls_head weights into the value_network before eval. '
+             'When set with --dm_epochs 0, skips training entirely.')
     parser.add_argument('--lr', type=float, default=0.01)
 
     parser.add_argument('--dm_lr', type=float, default=0.01)
@@ -129,12 +133,19 @@ if args.ckpt is not None:
         ckpt_path = pth_files[-1]
         info(f"Auto-selected latest checkpoint: {ckpt_path}")
     my_model.load_state_dict(torch.load(ckpt_path, map_location='cpu'))
-llm_model = LLMAttnPoolNetwork(my_env, model_name=args.hf_model_name)
+_raw_csv = os.path.join(my_env.DATA_PATH, f"{args.dataset}.csv")
+llm_model = LLMAttnPoolNetwork(my_env, model_name=args.hf_model_name, raw_csv_path=_raw_csv)
 info("Training: frozen backbone → learned attention pooling → vocab-aligned cls_head (4 logits) | Inference: forward() + argmax")
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)
 my_session.init_value_network(llm_model)
+
+if args.value_network_ckpt is not None:
+    adapter_state = torch.load(args.value_network_ckpt, map_location=my_env.device)
+    my_session.value_network.load_state_dict(adapter_state, strict=False)
+    info(f"Loaded value_network adapter weights from {args.value_network_ckpt}")
+
 # ---------------------------------------- Main -----------------------------------------------------------
 info('------------------------------------ Main --------------------------------')
 t = time.time()
@@ -147,7 +158,12 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     info(f'best_overall_accuracy {my_session.best_overall_accuracy}')
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
-    my_session.dm_train()
+    skip_train = (args.value_network_ckpt is not None and my_env.args.dm_epochs == 0)
+    if not skip_train:
+        my_session.dm_train()
+    else:
+        info("[CACHE] Skipping dm_train — pre-computing hidden states for eval only...")
+        my_session.precompute_hidden_states()
     prof, on_time, pmp, _, acc_hist, acc_true = my_session.dm_test("test")
     _acc_true_str = f"{acc_true:.4f}" if acc_true is not None else "N/A"
     info(f"[TEST] profit={prof:.4f} on_time={on_time:.4f} acc_hist={acc_hist:.4f} acc_true={_acc_true_str} pmp={pmp}")

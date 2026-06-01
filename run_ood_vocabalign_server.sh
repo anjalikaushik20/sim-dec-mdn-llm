@@ -11,14 +11,14 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ood_vocabalign/${RUN_ID}"
+BASE_OUT_DIR="/output/latest_output/sample_efficiency/ood_vocabalign/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
 echo "OOD evaluation — all models (VocabAlign) on DataCo_OOD, dm_epochs=${DM_EPOCHS}"
 echo "Fracs: 0.01 0.05 0.10 0.25 0.50 1.00 × 6 models, sequential on GPU 0"
 
-DATACO_CKPT="/data/akaush39/sim-to-dec/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+DATACO_CKPT="/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
 
 total=0
 done_count=0

@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,7 +7,7 @@ from tools import feature_list
 
 
 class LLMAttnPoolNetwork(nn.Module):
-    def __init__(self, env, model_name="google/gemma-3-1b-it", batch_size=64):
+    def __init__(self, env, model_name="google/gemma-3-1b-it", batch_size=64, raw_csv_path=None):
         super().__init__()
         self.env = env
         self.batch_size = batch_size
@@ -87,11 +88,106 @@ class LLMAttnPoolNetwork(nn.Module):
                 self.cls_head.bias.data.zero_()
         self.cls_head.to(self.env.device)
 
+        # Build categorical decoders if a raw CSV is provided
+        self.decoders = {}
+        if raw_csv_path is not None and os.path.exists(raw_csv_path):
+            self.decoders = self._build_decoders(raw_csv_path)
+            processed_path = os.path.join(
+                os.path.dirname(raw_csv_path),
+                f"processed_{env.args.dataset}_train.csv",
+            )
+            self._verify_decoders(processed_path, self.decoders)
+        elif raw_csv_path is not None:
+            print(f"[DECODER] WARNING: raw_csv_path '{raw_csv_path}' not found — "
+                  "falling back to numeric serialization.")
+
+    def _build_decoders(self, raw_csv_path: str) -> dict:
+        """Build int→string lookup tables for categorical columns from the raw CSV.
+
+        Reproduces the LabelEncoder encoding used by S_Loader.categorical_features_process
+        so that processed integer values can be decoded back to human-readable strings.
+
+        General rule: any column that (a) appears in the serialized feature groups and
+        (b) has string (object) dtype in the raw CSV gets a LabelEncoder decoder.
+
+        DataCo special cases: Category Id and Product Card Id are numeric in the raw CSV
+        but map to human-readable Category Name / Product Name via a join.
+        """
+        import pandas as pd
+        from sklearn.preprocessing import LabelEncoder
+
+        df = pd.read_csv(raw_csv_path, encoding="latin1")
+        decoders = {}
+        serialized = set(self.feature_names)
+
+        # General: string-typed columns that appear in the serialized feature groups.
+        # Use is_string_dtype to handle both legacy object dtype and pandas StringDtype.
+        for col in serialized:
+            if col in df.columns and pd.api.types.is_string_dtype(df[col]):
+                le = LabelEncoder()
+                le.fit(df[col].dropna().astype(str).unique())
+                decoders[col] = {i: str(cls) for i, cls in enumerate(le.classes_)}
+
+        # DataCo special case: Category Id (numeric) → Category Name
+        if ("Category Id" in serialized
+                and "Category Id" in df.columns
+                and "Category Name" in df.columns
+                and not pd.api.types.is_string_dtype(df["Category Id"])):
+            le = LabelEncoder()
+            le.fit(df["Category Id"].dropna().astype(str).unique())
+            cat_map = df[["Category Id", "Category Name"]].drop_duplicates().copy()
+            cat_map["key"] = cat_map["Category Id"].astype(str)
+            str_to_name = dict(zip(cat_map["key"], cat_map["Category Name"]))
+            decoders["Category Id"] = {
+                i: str(str_to_name.get(cls, cls)) for i, cls in enumerate(le.classes_)
+            }
+
+        # DataCo special case: Product Card Id (numeric) → Product Name
+        if ("Product Card Id" in serialized
+                and "Product Card Id" in df.columns
+                and "Product Name" in df.columns
+                and not pd.api.types.is_string_dtype(df["Product Card Id"])):
+            le = LabelEncoder()
+            le.fit(df["Product Card Id"].dropna().astype(str).unique())
+            prod_map = df[["Product Card Id", "Product Name"]].drop_duplicates().copy()
+            prod_map["key"] = prod_map["Product Card Id"].astype(str)
+            str_to_name = dict(zip(prod_map["key"], prod_map["Product Name"]))
+            decoders["Product Card Id"] = {
+                i: str(str_to_name.get(cls, cls)) for i, cls in enumerate(le.classes_)
+            }
+
+        for col, dec in decoders.items():
+            print(f"[DECODER] {col} ({len(dec)} entries): {dec}")
+
+        return decoders
+
+    def _verify_decoders(self, processed_csv_path: str, decoders: dict):
+        """Check that every integer in the processed file has a decoder entry."""
+        import pandas as pd
+
+        if not os.path.exists(processed_csv_path):
+            print(f"[DECODER] WARNING: processed file '{processed_csv_path}' not found — "
+                  "skipping verification.")
+            return
+
+        df = pd.read_csv(processed_csv_path)
+        all_ok = True
+        for col, dec in decoders.items():
+            if col not in df.columns:
+                continue
+            for v in df[col].dropna().unique():
+                k = int(round(float(v)))
+                if k not in dec:
+                    print(f"[DECODER WARNING] {col}: integer {k} has no decoder entry")
+                    all_ok = False
+        if all_ok:
+            print("[DECODER] Verification passed — all processed integers have decoder entries.")
+
     def serialize_batch(self, raw_state: torch.Tensor) -> list:
         """Convert raw feature vectors to natural-language prompts.
 
-        Identical to LLMValueNetwork.serialize_batch — feature names in the prompt
-        activate the LLM's pre-trained semantic knowledge about shipping concepts.
+        Categorical columns listed in self.decoders are decoded to human-readable
+        strings; all other columns fall back to numeric formatting.
         """
         raw_np = raw_state.detach().cpu().numpy()
         texts = []
@@ -100,8 +196,14 @@ class LLMAttnPoolNetwork(nn.Module):
             for label, (s, e) in zip(self._group_labels, self._group_slices):
                 names = self.feature_names[s:e]
                 vals = row[s:e]
-                kv = ", ".join(f"{n}={v:.3g}" for n, v in zip(names, vals))
-                parts.append(f"{label}: {kv}")
+                kv_parts = []
+                for n, v in zip(names, vals):
+                    if n in self.decoders:
+                        decoded = self.decoders[n].get(int(round(v)), f"{v:.3g}")
+                        kv_parts.append(f"{n}={decoded}")
+                    else:
+                        kv_parts.append(f"{n}={v:.3g}")
+                parts.append(f"{label}: {', '.join(kv_parts)}")
             texts.append(
                 ". ".join(parts)
                 + ". Optimal shipping action"

@@ -1,19 +1,13 @@
 """
-Compare zero-shot results across models from one or more run directories.
+Compare zero-shot VocabAlign results (all models) against the RL baseline.
 
-Usage:
-    python3 plot_zeroshot_compare.py <dir1> [<dir2> ...]
+Reads:
+  ZEROSHOT_DIR/{model_tag}/{dataset}_frac1.00.log
+  RL_DIR/{dataset}_frac1.00.log
 
-Example:
-    python3 plot_zeroshot_compare.py \\
-        /data/akaush39/sim-to-dec/output/latest_output/zero_shot/20260521_130031 \\
-        /data/akaush39/sim-to-dec/output/latest_output/zero_shot/20260521_140045
-
-Expects log files named {dataset}_{model_tag}.log inside each directory.
-Saves plots and a summary table in the first directory provided.
+Saves plots and summary table to ZEROSHOT_DIR.
 """
 
-import sys
 import os
 import re
 import glob
@@ -22,15 +16,26 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 
+# ── Hardcoded paths ───────────────────────────────────────────────────────────
+
+ZEROSHOT_DIR = "output/decision_maker/zeroshot/20260529_172517"
+RL_DIR       = "output/decision_maker/rl/20260529_232419"
+FRAC         = "1.00"
+OUT_DIR      = ZEROSHOT_DIR
 
 # ── Parsing ───────────────────────────────────────────────────────────────────
+
+ZEROSHOT_LOG_PAT = re.compile(r"([a-z]+)\.log$")
+RL_LOG_PAT       = re.compile(r"([a-z]+)_frac([\d.]+)\.log$")
 
 def parse_log(path):
     metrics = {}
     patterns = {
-        "profit":   re.compile(r"best_profit=([\d.]+)"),
-        "on_time":  re.compile(r"best_on_time=([\d.]+)"),
-        "accuracy": re.compile(r"best_dm_accuracy_true=([\d.]+)"),
+        "profit":   re.compile(r"best_profit[=\s]+([\d.]+)"),
+        "on_time":  re.compile(r"best_on_time[=\s]+([\d.]+)"),
+        # match best_dm_accuracy and best_dm_accuracy_true; last match wins
+        # so _true overwrites the plain value when both appear (LLM logs)
+        "accuracy": re.compile(r"best_dm_accuracy(?:_true)?[=:\s]+([\d.]+)"),
     }
     with open(path) as f:
         for line in f:
@@ -41,23 +46,41 @@ def parse_log(path):
     return metrics if len(metrics) == 3 else None
 
 
-LOG_PAT = re.compile(r"([a-z]+)_([a-zA-Z0-9.\-]+)\.log$")
-
-def collect_results(dirs):
-    """Returns dict: dataset → model_tag → {profit, on_time, accuracy}"""
+def collect_zeroshot(run_dir):
+    """Walk model subdirs, pick {dataset}.log files.
+    Returns: dataset → model_tag → {profit, on_time, accuracy}"""
     results = defaultdict(dict)
-    for d in dirs:
-        for path in glob.glob(os.path.join(d, "*.log")):
-            fname = os.path.basename(path)
-            m = LOG_PAT.match(fname)
+    for model_tag in sorted(os.listdir(run_dir)):
+        model_dir = os.path.join(run_dir, model_tag)
+        if not os.path.isdir(model_dir):
+            continue
+        for path in glob.glob(os.path.join(model_dir, "*.log")):
+            m = ZEROSHOT_LOG_PAT.match(os.path.basename(path))
             if not m:
                 continue
-            dataset, model_tag = m.group(1), m.group(2)
+            dataset = m.group(1)
             metrics = parse_log(path)
             if metrics is None:
-                print(f"  [skip] {fname} — incomplete")
+                print(f"  [skip] {model_tag}/{os.path.basename(path)} — incomplete")
                 continue
             results[dataset][model_tag] = metrics
+    return results
+
+
+def collect_rl(rl_dir, frac, model_tag="rl"):
+    """Pick frac-filtered logs directly from rl_dir.
+    Returns: dataset → model_tag → {profit, on_time, accuracy}"""
+    results = defaultdict(dict)
+    for path in glob.glob(os.path.join(rl_dir, f"*_frac{frac}.log")):
+        m = RL_LOG_PAT.match(os.path.basename(path))
+        if not m:
+            continue
+        dataset = m.group(1)
+        metrics = parse_log(path)
+        if metrics is None:
+            print(f"  [skip] {os.path.basename(path)} — incomplete")
+            continue
+        results[dataset][model_tag] = metrics
     return results
 
 
@@ -70,6 +93,7 @@ DATASET_LABELS = {
 }
 
 MODEL_ORDER = [
+    "rl",
     "gpt2",
     "gpt2-medium",
     "gpt2-large",
@@ -79,6 +103,7 @@ MODEL_ORDER = [
 ]
 
 MODEL_LABELS = {
+    "rl":          "RL",
     "gpt2":        "GPT-2",
     "gpt2-medium": "GPT-2 Med",
     "gpt2-large":  "GPT-2 Lg",
@@ -86,18 +111,6 @@ MODEL_LABELS = {
     "qwen3-1.7B":  "Qwen3-1.7B",
     "qwen3-4B":    "Qwen3-4B",
 }
-
-COLORS = [
-    "#90A4AE", "#546E7A", "#263238",   # GPT-2 shades
-    "#81D4FA", "#0288D1", "#01579B",   # Qwen3 shades
-]
-
-METRICS = [
-    ("profit",   "Profit"),
-    ("on_time",  "On-Time Ratio"),
-    ("sum",      "Profit + On-Time"),
-    ("accuracy", "Accuracy (vs Optimal)"),
-]
 
 
 def sorted_models(model_tags):
@@ -107,77 +120,64 @@ def sorted_models(model_tags):
 
 # ── Plots ─────────────────────────────────────────────────────────────────────
 
-def plot_grouped_bar(results, out_dir):
-    """4 subplots (one per metric), grouped bars by dataset, one bar per model."""
-    datasets = sorted(results.keys())
-    all_models = sorted_models({m for d in results.values() for m in d})
-    n_models = len(all_models)
-    x = np.arange(len(datasets))
-    width = 0.8 / n_models
+BAR_COLORS = {
+    "profit":  "#4C72B0",   # blue
+    "on_time": "#DD8452",   # orange
+    "sum":     "#55A868",   # green
+}
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
-    axes = axes.flatten()
-
-    for ax, (key, label) in zip(axes, METRICS):
-        for i, model in enumerate(all_models):
-            values = []
-            for ds in datasets:
-                m = results[ds].get(model)
-                if m is None:
-                    values.append(0.0)
-                elif key == "sum":
-                    values.append(m["profit"] + m["on_time"])
-                else:
-                    values.append(m[key])
-
-            color = COLORS[i % len(COLORS)]
-            bars = ax.bar(x + i * width - (n_models - 1) * width / 2,
-                          values, width * 0.9,
-                          label=MODEL_LABELS.get(model, model),
-                          color=color)
-
-        ax.set_title(label, fontsize=12, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels([DATASET_LABELS.get(d, d) for d in datasets], fontsize=10)
-        ax.set_ylabel(label, fontsize=9)
-        ax.legend(fontsize=7, ncol=2)
-        ax.grid(axis="y", alpha=0.3)
-
-    fig.suptitle("Zero-Shot Performance — All Models", fontsize=13, fontweight="bold")
-    plt.tight_layout()
-    out_path = os.path.join(out_dir, "zeroshot_compare.png")
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"Saved: {out_path}")
+RL_COLORS = {
+    "profit":  "#4C72B0",
+    "on_time": "#DD8452",
+    "sum":     "#55A868",
+}
 
 
 def plot_per_dataset(results, out_dir):
-    """One figure per dataset: 4 metric subplots, one bar per model."""
-    all_models = sorted_models({m for d in results.values() for m in d})
-    x = np.arange(len(all_models))
+    """One figure per dataset: grouped bars (profit, on_time, sum) per LLM model,
+    with RL values as dashed horizontal reference lines."""
+    llm_models = sorted_models({m for d in results.values() for m in d if m != "rl"})
+    x = np.arange(len(llm_models))
+    n_bars = 3
+    width = 0.22
 
     for ds, model_map in sorted(results.items()):
-        fig, axes = plt.subplots(1, 4, figsize=(16, 4), sharey=False)
-        for ax, (key, label) in zip(axes, METRICS):
-            values = []
-            for model in all_models:
-                m = model_map.get(model)
-                if m is None:
-                    values.append(0.0)
-                elif key == "sum":
-                    values.append(m["profit"] + m["on_time"])
-                else:
-                    values.append(m[key])
+        rl = model_map.get("rl", {})
 
-            bars = ax.bar(x, values, color=COLORS[:len(all_models)], edgecolor="white")
-            ax.set_title(label, fontsize=11, fontweight="bold")
-            ax.set_xticks(x)
-            ax.set_xticklabels([MODEL_LABELS.get(m, m) for m in all_models],
-                               fontsize=7, rotation=30, ha="right")
-            ax.grid(axis="y", alpha=0.3)
+        fig, ax = plt.subplots(figsize=(12, 5))
+
+        # ── Grouped bars for LLM models ──────────────────────────────────────
+        profits  = [model_map.get(m, {}).get("profit",  0.0) for m in llm_models]
+        ontimes  = [model_map.get(m, {}).get("on_time", 0.0) for m in llm_models]
+        sums     = [p + o for p, o in zip(profits, ontimes)]
+
+        ax.bar(x - width, profits, width, label="Zero-Shot Profit",   color=BAR_COLORS["profit"])
+        ax.bar(x,         ontimes, width, label="Zero-Shot On-Time",  color=BAR_COLORS["on_time"])
+        ax.bar(x + width, sums,    width, label="Zero-Shot Combined", color=BAR_COLORS["sum"])
+
+        # ── RL dashed reference lines ─────────────────────────────────────────
+        if rl:
+            rl_profit  = rl.get("profit",  0.0)
+            rl_ontime  = rl.get("on_time", 0.0)
+            rl_sum     = rl_profit + rl_ontime
+            ax.axhline(rl_profit,  color=RL_COLORS["profit"],  linestyle="--", linewidth=1.5,
+                       label=f"RL Profit ({rl_profit:.4f})")
+            ax.axhline(rl_ontime,  color=RL_COLORS["on_time"], linestyle="--", linewidth=1.5,
+                       label=f"RL On-Time ({rl_ontime:.4f})")
+            ax.axhline(rl_sum,     color=RL_COLORS["sum"],     linestyle="--", linewidth=1.5,
+                       label=f"RL Combined ({rl_sum:.4f})")
+
+        ax.set_xticks(x)
+        ax.set_xticklabels([MODEL_LABELS.get(m, m) for m in llm_models], fontsize=10)
+        ax.set_ylabel("Score", fontsize=11)
+        ax.set_ylim(bottom=0)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        ax.legend(fontsize=9, ncol=2, loc="upper right")
 
         dset_label = DATASET_LABELS.get(ds, ds)
-        fig.suptitle(f"Zero-Shot — {dset_label}", fontsize=12, fontweight="bold")
+        ax.set_title(f"{dset_label} — Zero-Shot (All Models) vs RL Full Training",
+                     fontsize=12, fontweight="bold")
+
         plt.tight_layout()
         out_path = os.path.join(out_dir, f"zeroshot_compare_{ds}.png")
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -185,7 +185,7 @@ def plot_per_dataset(results, out_dir):
         print(f"Saved: {out_path}")
 
 
-def print_table(results):
+def format_table(results):
     all_models = sorted_models({m for d in results.values() for m in d})
     datasets = sorted(results.keys())
 
@@ -193,46 +193,57 @@ def print_table(results):
         f"  {DATASET_LABELS.get(d, d):^28}" for d in datasets
     )
     subheader = f"{'':16}" + "".join(
-        f"  {'Profit':>8} {'OnTime':>8} {'Acc':>8}" for _ in datasets
+        f"  {'Profit':>8} {'OnTime':>8} {'Sum':>8}" for _ in datasets
     )
-    print("\n" + header)
-    print(subheader)
-    print("-" * len(subheader))
+    sep = "-" * len(subheader)
 
+    lines = ["\n" + header, subheader, sep]
     for model in all_models:
         row = f"{MODEL_LABELS.get(model, model):<16}"
         for ds in datasets:
             m = results[ds].get(model)
             if m:
-                row += f"  {m['profit']:>8.4f} {m['on_time']:>8.4f} {m['accuracy']:>8.4f}"
+                s = m["profit"] + m["on_time"]
+                row += f"  {m['profit']:>8.4f} {m['on_time']:>8.4f} {s:>8.4f}"
             else:
                 row += f"  {'—':>8} {'—':>8} {'—':>8}"
-        print(row)
-    print()
+        lines.append(row)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def print_table(results, out_dir):
+    table = format_table(results)
+    print(table)
+    out_path = os.path.join(out_dir, "zeroshot_compare.txt")
+    with open(out_path, "w") as f:
+        f.write(table)
+    print(f"Saved: {out_path}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
-
-    dirs = [d.rstrip("/") for d in sys.argv[1:]]
-    for d in dirs:
+    for d in [ZEROSHOT_DIR, RL_DIR]:
         if not os.path.isdir(d):
             print(f"Error: directory not found: {d}")
-            sys.exit(1)
+            raise SystemExit(1)
 
-    print(f"Reading logs from: {dirs}")
-    results = collect_results(dirs)
+    print(f"Zero-shot dir : {ZEROSHOT_DIR}")
+    print(f"RL dir        : {RL_DIR}")
+    print(f"Frac filter   : {FRAC}")
+
+    results = collect_zeroshot(ZEROSHOT_DIR)
+    rl_results = collect_rl(RL_DIR, FRAC)
+
+    for dataset, model_map in rl_results.items():
+        results[dataset].update(model_map)
 
     if not results:
         print("No completed log files found.")
-        sys.exit(1)
+        raise SystemExit(1)
 
-    out_dir = dirs[0]
-    print_table(results)
-    plot_grouped_bar(results, out_dir)
-    plot_per_dataset(results, out_dir)
+    os.makedirs(OUT_DIR, exist_ok=True)
+    print_table(results, OUT_DIR)
+    plot_per_dataset(results, OUT_DIR)
     print("Done.")

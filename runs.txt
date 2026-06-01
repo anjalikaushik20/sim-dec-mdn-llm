@@ -1,0 +1,22 @@
+run list:
+//main
+run_zeroshot_all_server.sh
+run_sample_efficiency_all_vocabalign_parallel.sh
+run_sample_efficiency_rl.sh
+run_crossdataset_vocab_align
+
+//ablations
+run_ablation_vocabalign -> only CE loss, no vocab init, mean pool
+run_sample_efficiency_ml -> historical, random, rf, xgboost
+
+//visuals
+plot_zeroshot_compare -> compares zeroshot with RL
+compare_fullrl_vs_llm_fracs.py -> compares fractions with RL
+plot_compare_rl_llm.py -> compares LLM fractions with RL fractions
+plot_sample_efficiency_rl.py --GPU 0 -> plots the sample efficiency curves for RL
+compare_ablations.py --GPU 3 -> Compare the 3 ablations: 
+    1. no_vocab_init --pool_init random
+    2. mean_pool	--pool_type mean
+    3. hard_labels_only	--no_soft_labels (only CE loss)
+plot_sample_efficiency_ml.py --GPU 1 -> plot ml baselines
+

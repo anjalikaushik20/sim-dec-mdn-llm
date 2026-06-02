@@ -1,7 +1,6 @@
 #!/bin/bash
 # Parallel sample-efficiency sweep — all models, vocabalign.
 #
-# H100 NVL GPU 0  (95.8 GB VRAM, 1 TB RAM, 48 CPU cores)
 #
 # Resource allocation — memory per job (float32 frozen backbone + CUDA overhead):
 #   gpt2         ~3 GB  →  18 parallel  (54 GB)
@@ -25,7 +24,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/decision_maker/${RUN_ID}"
+BASE_OUT_DIR="output/decision_maker/all_fracs/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
@@ -56,7 +55,7 @@ trap 'sem_close; wait' EXIT
 # Args: dataset hf_name frac gpu_id model_tag log
 launch_job() {
     local dataset="$1" hf_name="$2" frac="$3" gpu_id="$4" model_tag="$5" log="$6"
-    local ckpt_dir="output/decision_maker/${dataset}/ckpts/frac${frac}/${model_tag}"
+    local ckpt_dir="output/decision_maker/all_fracs/${dataset}/ckpts/frac${frac}/${model_tag}"
     mkdir -p "${ckpt_dir}"
     local extra_args=""
 
@@ -167,5 +166,5 @@ echo ""
 echo "=========================================="
 echo " All 108 jobs complete."
 echo " Logs       → ${BASE_OUT_DIR}"
-echo " Checkpoints→ output/decision_maker/{DataCo,GlobalStore,OAS}/ckpts/frac*/{model}/"
+echo " Checkpoints→ output/decision_maker/all_fracs/{DataCo,GlobalStore,OAS}/ckpts/frac*/{model}/"
 echo "=========================================="

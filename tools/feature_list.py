@@ -163,11 +163,25 @@ shipping_info = {
                 'OAS':['Customer Country', 'Customer Market', 'Customer Region'],
                 }
 
+group_labels = {
+            'DataCo':      ['Product', 'Order', 'Customer', 'Shipping'],
+            'LSCRW':       ['Product', 'Order', 'Customer', 'Shipping'],
+            'GlobalStore': ['Product', 'Order', 'Customer', 'Shipping'],
+            'OAS':         ['Product', 'Order', 'Customer', 'Shipping'],
+            }
+
 decision = {
             'DataCo': ['Shipping Mode'],
             'LSCRW':['shipping_mode'],
             'GlobalStore': ['Ship Mode'],
             'OAS':['Shipment Mode'],
+            }
+
+action_names = {
+            'DataCo':      ['Standard Class', 'Second Class', 'First Class', 'Same Day'],
+            'LSCRW':       ['Standard Class', 'Second Class', 'First Class', 'Same Day'],
+            'GlobalStore': ['Standard Class', 'Second Class', 'First Class', 'Same Day'],
+            'OAS':         ['Standard Class', 'Second Class', 'First Class', 'Same Day'],
             }
 
 label = {
@@ -195,5 +209,5 @@ retrieva_index = {
 # DataCo_OOD uses the same feature schema as DataCo (Subset_1/Subset_2 split of the same dataset)
 for _d in [numerical_features, categorical_features, date_features,
            product_info, order_info, customer_info, shipping_info,
-           decision, label, profit, retrieva_index]:
+           decision, label, profit, retrieva_index, action_names, group_labels]:
     _d['DataCo_OOD'] = _d['DataCo']

@@ -13,7 +13,7 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="output/decision_maker/zeroshot/${RUN_ID}"
+BASE_OUT_DIR="output/decision_maker/new_prompt/zeroshot/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 NUM_GPUS=4
@@ -130,12 +130,12 @@ run_model_group() {
 # Zero-shot = inference only, so memory per job is lower than training.
 # All 3 dataset jobs per model run in parallel (each on its own GPU);
 # model groups are sequential so only one backbone is loaded at a time.
-run_model_group "gpt2"        "gpt2"             3
-run_model_group "gpt2-medium" "gpt2-medium"      3
-run_model_group "gpt2-large"  "gpt2-large"       3
 run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 3
 run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 3
 run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"   3
+run_model_group "gpt2"        "gpt2"             3
+run_model_group "gpt2-medium" "gpt2-medium"      3
+run_model_group "gpt2-large"  "gpt2-large"       3
 
 echo ""
 echo "=========================================="

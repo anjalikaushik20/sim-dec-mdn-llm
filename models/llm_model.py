@@ -30,7 +30,7 @@ class LLMAttnPoolNetwork(nn.Module):
             + feature_list.customer_info[dataset]
             + feature_list.shipping_info[dataset]
         )
-        self._group_labels = feature_list.group_labels[dataset]
+        self._group_labels = ["Product", "Order", "Customer", "Shipping"]
         self._group_slices = []
         offset = 0
         for dim in self.group_dims:
@@ -56,13 +56,10 @@ class LLMAttnPoolNetwork(nn.Module):
 
         hidden = self.backbone.config.hidden_size
 
-        # Shared: LM-head rows for the first token of each action name.
-        # Using action name tokens ("Standard", "Second", "First", "Same") instead of
-        # digit tokens ("0"–"3") gives the cls_head semantically meaningful initialization.
-        self._action_names = feature_list.action_names[dataset]
+        # Shared: LM-head rows for action tokens "0"–"3" used by both heads.
         action_token_ids = [
-            self.tokenizer.encode(name, add_special_tokens=False)[0]
-            for name in self._action_names
+            self.tokenizer.encode(t, add_special_tokens=False)[0]
+            for t in ["0", "1", "2", "3"]
         ]
         with torch.no_grad():
             action_rows = self.backbone.lm_head.weight[action_token_ids]  # [4, H]
@@ -187,14 +184,12 @@ class LLMAttnPoolNetwork(nn.Module):
             print("[DECODER] Verification passed — all processed integers have decoder entries.")
 
     def serialize_batch(self, raw_state: torch.Tensor) -> list:
-        """Convert raw feature vectors to instruction-style natural-language prompts.
+        """Convert raw feature vectors to natural-language prompts.
 
         Categorical columns listed in self.decoders are decoded to human-readable
         strings; all other columns fall back to numeric formatting.
-        Action options are expressed as natural language labels, not numeric codes.
         """
         raw_np = raw_state.detach().cpu().numpy()
-        action_opts = ", ".join(self._action_names)
         texts = []
         for row in raw_np:
             parts = []
@@ -209,13 +204,10 @@ class LLMAttnPoolNetwork(nn.Module):
                     else:
                         kv_parts.append(f"{n}={v:.3g}")
                 parts.append(f"{label}: {', '.join(kv_parts)}")
-            context = "\n".join(parts)
             texts.append(
-                "You are a decision-making assistant. "
-                "Based on the context below, select the optimal action.\n\n"
-                f"Context:\n{context}\n\n"
-                f"Available actions: {action_opts}\n"
-                "Optimal action:"
+                ". ".join(parts)
+                + ". Optimal shipping action"
+                  " (0=Standard Class, 1=Second Class, 2=First Class, 3=Same Day):"
             )
         return texts
 

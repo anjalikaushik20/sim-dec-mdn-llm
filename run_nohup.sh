@@ -7,8 +7,8 @@ fi
 
 SCRIPT="$1"
 shift
-mkdir -p run_logs
-LOG="run_logs/run_$(date +"%m%d%Y_%H%M").out"
+mkdir -p run_logs/date
+LOG="run_logs/date/run_$(date +"%m%d%Y_%H%M").out"
 nohup bash "$SCRIPT" "$@" > "$LOG" 2>&1 &
 echo "Started: $SCRIPT $*"
 echo "Log:     $LOG"

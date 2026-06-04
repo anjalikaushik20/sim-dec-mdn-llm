@@ -35,10 +35,11 @@ OAS_SIM="output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
 
 NUM_GPUS=1
 GPUS=(0)
+IFS=' ' read -r -a SEEDS <<< "${SEEDS:-42 0 1 2 3}"
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-OUT_DIR="output/exp1_observational_matching/${RUN_ID}"
-mkdir -p "${OUT_DIR}"
+OUT_BASE="output/exp1_observational_matching/${RUN_ID}"
+mkdir -p "${OUT_BASE}"
 
 # ── Model-tag → HuggingFace name ─────────────────────────────────────────────
 model_to_hf() {
@@ -109,12 +110,13 @@ resolve() {
 }
 
 echo "=========================================="
-echo " Experiment 1 — Observational Matching"
+echo " Experiment 5 — Observational Matching (multi-seed)"
 echo " run_id=${RUN_ID}"
-echo " Output → ${OUT_DIR}"
+echo " Seeds: ${SEEDS[*]}"
+echo " Output base → ${OUT_BASE}"
 echo "=========================================="
 echo ""
-echo "── Resolving adapters ──"
+echo "── Resolving adapters (uses best frac1.00 adapter, seed-agnostic) ──"
 
 resolve DataCo    DATACO_ADAPTER DATACO_HF_MODEL
 DATACO_ADAPTER="${_RESOLVED_ADAPTER}"; DATACO_HF="${_RESOLVED_HF}"
@@ -127,9 +129,6 @@ OAS_ADAPTER="${_RESOLVED_ADAPTER}"; OAS_HF="${_RESOLVED_HF}"
 
 echo ""
 
-# ── Step 1: generate per-sample predictions (sequential — 1 GPU) ─────────────
-echo "── Step 1: generating per-sample test predictions ──"
-
 declare -A DATASET_SIM=( [DataCo]="${DATACO_SIM}" [GlobalStore]="${GS_SIM}" [OAS]="${OAS_SIM}" )
 declare -A DATASET_ADAPTER=( [DataCo]="${DATACO_ADAPTER}" [GlobalStore]="${GS_ADAPTER}" [OAS]="${OAS_ADAPTER}" )
 declare -A DATASET_HF=( [DataCo]="${DATACO_HF}" [GlobalStore]="${GS_HF}" [OAS]="${OAS_HF}" )
@@ -137,84 +136,94 @@ declare -A DATASET_OTR=( [DataCo]=2 [GlobalStore]=10 [OAS]=50 )
 declare -A DATASET_LR=( [DataCo]=0.01 [GlobalStore]=0.01 [OAS]=0.00003 )
 
 gpu_id="${GPUS[0]}"
-job_num=0
 
-PRED_PIDS=()
+for SEED in "${SEEDS[@]}"; do
+    OUT_DIR="${OUT_BASE}/seed${SEED}"
+    mkdir -p "${OUT_DIR}"
+    echo ""
+    echo "══ Seed ${SEED} ══"
 
-for DATASET in DataCo GlobalStore OAS; do
-    job_num=$(( job_num + 1 ))
-    DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')
-    PRED_CSV="${OUT_DIR}/${DS_LOWER}_predictions.csv"
-    LOG="${OUT_DIR}/${DS_LOWER}_inference.log"
+    # ── Step 1: generate per-sample predictions ───────────────────────────────
+    echo "── Step 1: generating per-sample test predictions (seed=${SEED}) ──"
 
-    echo "  [${job_num}/3] GPU${gpu_id} → ${DATASET} (${DATASET_HF[${DATASET}]}) → ${PRED_CSV}"
+    job_num=0
+    PRED_PIDS=()
 
-    (
-        CUDA_VISIBLE_DEVICES="${gpu_id}" python3 main/cb_main_llm.py \
-            --use_gpu 1 --device_id 0 \
+    for DATASET in DataCo GlobalStore OAS; do
+        job_num=$(( job_num + 1 ))
+        DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')
+        PRED_CSV="${OUT_DIR}/${DS_LOWER}_predictions.csv"
+        LOG="${OUT_DIR}/${DS_LOWER}_inference.log"
+
+        echo "  [${job_num}/3] GPU${gpu_id} → ${DATASET} (${DATASET_HF[${DATASET}]}) → ${PRED_CSV}"
+
+        (
+            CUDA_VISIBLE_DEVICES="${gpu_id}" python3 main/cb_main_llm.py \
+                --use_gpu 1 --device_id 0 \
+                --dataset "${DATASET}" \
+                --train_mode 2 \
+                --wandb 0 \
+                --hf_model_name "${DATASET_HF[${DATASET}]}" \
+                --save 0 \
+                --dm_epochs 0 \
+                --seed "${SEED}" \
+                --otr_reward_coeff "${DATASET_OTR[${DATASET}]}" \
+                --dm_lr "${DATASET_LR[${DATASET}]}" \
+                --ckpt "${DATASET_SIM[${DATASET}]}" \
+                --value_network_ckpt "${DATASET_ADAPTER[${DATASET}]}" \
+                --save_predictions "${PRED_CSV}" \
+                > "${LOG}" 2>&1
+            rc=$?
+            if [ "${rc}" -ne 0 ]; then
+                echo "  [FAIL rc=${rc}] ${DATASET} seed=${SEED} inference — see ${LOG}" >&2
+            else
+                echo "  [OK] ${DATASET} seed=${SEED} → ${PRED_CSV}"
+            fi
+        ) &
+        PRED_PIDS+=($!)
+        sleep 2
+    done
+
+    failed=0
+    for pid in "${PRED_PIDS[@]}"; do wait "${pid}" || failed=$(( failed + 1 )); done
+    [ "${failed}" -gt 0 ] && { echo "Step 1 seed=${SEED}: ${failed} failure(s)" >&2; continue; }
+    echo "Step 1 seed=${SEED} complete."
+
+    # ── Step 2: observational matching ───────────────────────────────────────
+    echo "── Step 2: observational matching (seed=${SEED}) ──"
+
+    for DATASET in DataCo GlobalStore OAS; do
+        DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')
+        PRED_CSV="${OUT_DIR}/${DS_LOWER}_predictions.csv"
+        MATCH_LOG="${OUT_DIR}/${DS_LOWER}_matching.log"
+
+        [ ! -f "${PRED_CSV}" ] && { echo "  [SKIP] ${DATASET} seed=${SEED}: no predictions" >&2; continue; }
+
+        echo "  → ${DATASET} seed=${SEED} matching..."
+        python3 experiments/observational_matching.py \
+            --predictions "${PRED_CSV}" \
             --dataset "${DATASET}" \
-            --train_mode 2 \
-            --wandb 0 \
-            --hf_model_name "${DATASET_HF[${DATASET}]}" \
-            --save 0 \
-            --dm_epochs 0 \
-            --otr_reward_coeff "${DATASET_OTR[${DATASET}]}" \
-            --dm_lr "${DATASET_LR[${DATASET}]}" \
-            --ckpt "${DATASET_SIM[${DATASET}]}" \
-            --value_network_ckpt "${DATASET_ADAPTER[${DATASET}]}" \
-            --save_predictions "${PRED_CSV}" \
-            > "${LOG}" 2>&1
-        rc=$?
-        if [ "${rc}" -ne 0 ]; then
-            echo "  [FAIL rc=${rc}] ${DATASET} inference — see ${LOG}" >&2
-        else
-            echo "  [OK] ${DATASET} → ${PRED_CSV}"
-        fi
-    ) &
-    PRED_PIDS+=($!)
-
-    sleep 2  # stagger HuggingFace model load
+            --k 5 \
+            2>&1 | tee "${MATCH_LOG}"
+    done
 done
 
-failed=0
-for pid in "${PRED_PIDS[@]}"; do
-    wait "${pid}" || failed=$(( failed + 1 ))
-done
-
-if [ "${failed}" -gt 0 ]; then
-    echo "Step 1 finished with ${failed} failure(s) — check logs in ${OUT_DIR}/" >&2
-    exit 1
-fi
-echo "Step 1 complete — all predictions generated."
-
-# ── Step 2: observational matching per dataset ───────────────────────────────
+# ── Step 3: aggregate ATE across seeds ───────────────────────────────────────
 echo ""
-echo "── Step 2: observational matching ──"
-
-for DATASET in DataCo GlobalStore OAS; do
-    DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')
-    PRED_CSV="${OUT_DIR}/${DS_LOWER}_predictions.csv"
-    MATCH_LOG="${OUT_DIR}/${DS_LOWER}_matching.log"
-
-    if [ ! -f "${PRED_CSV}" ]; then
-        echo "  [SKIP] ${DATASET}: predictions file not found (${PRED_CSV})" >&2
-        continue
-    fi
-
-    echo "  → ${DATASET} matching..."
-    python3 experiments/observational_matching.py \
-        --predictions "${PRED_CSV}" \
-        --dataset "${DATASET}" \
-        --k 5 \
-        2>&1 | tee "${MATCH_LOG}"
-done
+echo "── Step 3: aggregating ATE across seeds ──"
+python3 experiments/observational_matching.py \
+    --mode aggregate \
+    --seed_dirs "${OUT_BASE}/seed*" \
+    --out "${OUT_BASE}/aggregate_ate.csv" \
+    2>&1 | tee "${OUT_BASE}/aggregate.log"
 
 echo ""
 echo "=========================================="
-echo " Experiment 1 complete."
-echo " Predictions → ${OUT_DIR}/*_predictions.csv"
-echo " ATE tables  → ${OUT_DIR}/*_matching.log"
+echo " Experiment 5 complete."
+echo " Per-seed predictions → ${OUT_BASE}/seed*/*_predictions.csv"
+echo " Per-seed ATE tables  → ${OUT_BASE}/seed*/*_matching.log"
+echo " Aggregate ATE        → ${OUT_BASE}/aggregate_ate.csv"
 echo ""
 echo " Grep results:"
-echo "   grep 'ATE\|on_time\|days_for' ${OUT_DIR}/*_matching.log"
+echo "   grep 'ATE\|on_time\|days_for' ${OUT_BASE}/seed*/*_matching.log"
 echo "=========================================="

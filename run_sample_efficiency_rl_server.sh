@@ -16,14 +16,14 @@ MODEL_TAG="rl"
 LOG_DIR="output/decision_maker/${MODEL_TAG}/${RUN_ID}"
 mkdir -p "${LOG_DIR}"
 
-NUM_GPUS=2
-GPUS=(1 2)
+NUM_GPUS=1
+GPUS=(1)
 DM_EPOCHS="${1:-${DM_EPOCHS:-6000}}"
 
 echo "=========================================="
 echo " Sample efficiency — RL baseline (ValueNetwork)"
 echo " dm_epochs=${DM_EPOCHS}  run_id=${RUN_ID}"
-echo " GPUs: 1, 2 (RTX 6000 Ada, round-robin)"
+echo " GPU: 1 (RTX 6000 Ada)"
 echo " Jobs: 6 fracs × 3 datasets = 18 (all parallel)"
 echo "=========================================="
 

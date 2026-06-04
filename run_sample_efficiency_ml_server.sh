@@ -53,7 +53,7 @@ for BASELINE in rf xgb random historical; do
                 --train_frac "${FRAC}" \
                 --ckpt "${CKPT}" \
                 --out_dir "${OUT_DIR}" \
-                --use_gpu 1 --device_id 1 \
+                --use_gpu 1 --device_id 0 \
                 > "${LOG_FILE}" 2>&1
 
             echo "[${done_count}/${total}] ${BASELINE} ${DATASET} frac=${FRAC} done"

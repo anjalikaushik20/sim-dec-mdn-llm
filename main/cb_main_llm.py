@@ -158,12 +158,9 @@ if my_env.args.train_mode == 0 or my_env.args.train_mode == 1:
     info(f'best_overall_accuracy {my_session.best_overall_accuracy}')
 
 if my_env.args.train_mode == 0 or my_env.args.train_mode == 2:
-    skip_train = (args.value_network_ckpt is not None and my_env.args.dm_epochs == 0)
+    skip_train = my_env.args.dm_epochs == 0
     if not skip_train:
         my_session.dm_train()
-    else:
-        info("[CACHE] Skipping dm_train — pre-computing hidden states for eval only...")
-        my_session.precompute_hidden_states()
     prof, on_time, pmp, _, acc_hist, acc_true = my_session.dm_test("test")
     _acc_true_str = f"{acc_true:.4f}" if acc_true is not None else "N/A"
     info(f"[TEST] profit={prof:.4f} on_time={on_time:.4f} acc_hist={acc_hist:.4f} acc_true={_acc_true_str} pmp={pmp}")

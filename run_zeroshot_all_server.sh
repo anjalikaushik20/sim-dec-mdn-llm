@@ -16,12 +16,13 @@ RUN_ID=$(date +%Y%m%d_%H%M%S)
 BASE_OUT_DIR="output/decision_maker/zeroshot/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
-NUM_GPUS=4
+NUM_GPUS=1
+GPUS=(0)
 
 echo "=========================================="
 echo " Zero-shot evaluation — all models (vocabalign)"
 echo " dm_epochs=0  run_id=${RUN_ID}"
-echo " GPUs: ${NUM_GPUS} × RTX 6000 Ada (49 GB each)"
+echo " GPU: 0 (RTX 6000 Ada)"
 echo " Jobs: 6 models × 3 datasets = 18"
 echo "=========================================="
 
@@ -69,7 +70,6 @@ launch_job() {
         --hf_model_name "${hf_name}" \
         --save 0 \
         --dm_epochs 0 \
-        --train_frac 1.0 \
         ${extra_args} \
         > "${log}" 2>&1
 }
@@ -91,7 +91,7 @@ run_model_group() {
     local pids=() job_num=0
 
     for DATASET in DataCo GlobalStore OAS; do
-        local gpu_id=$(( job_num % NUM_GPUS ))
+        local gpu_id="${GPUS[$(( job_num % NUM_GPUS ))]}"
         job_num=$((job_num + 1))
         local log="${log_dir}/$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]').log"
 
@@ -130,12 +130,12 @@ run_model_group() {
 # Zero-shot = inference only, so memory per job is lower than training.
 # All 3 dataset jobs per model run in parallel (each on its own GPU);
 # model groups are sequential so only one backbone is loaded at a time.
-run_model_group "gpt2"        "gpt2"             3
-run_model_group "gpt2-medium" "gpt2-medium"      3
-run_model_group "gpt2-large"  "gpt2-large"       3
 run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 3
+run_model_group "gpt2"        "gpt2"             3
 run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 3
+run_model_group "gpt2-medium" "gpt2-medium"      3
 run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"   3
+run_model_group "gpt2-large"  "gpt2-large"       3
 
 echo ""
 echo "=========================================="

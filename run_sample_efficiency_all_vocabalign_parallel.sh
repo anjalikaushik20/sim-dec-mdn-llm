@@ -28,13 +28,14 @@ BASE_OUT_DIR="output/decision_maker/all_fracs/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
-NUM_GPUS=4   # RTX 6000 Ada × 4, 49 GB each
+NUM_GPUS=3
+GPUS=(1 2 3)
 
 echo "=========================================="
 echo " Sample efficiency — all models (vocabalign)"
 echo " dm_epochs=${DM_EPOCHS}  run_id=${RUN_ID}"
-echo " GPUs: ${NUM_GPUS} × RTX 6000 Ada (49 GB each, 196 GB total)"
-echo " Jobs: 6 models × 6 fracs × 3 datasets = 108"
+echo " GPUs: 1, 2, 3 (RTX 6000 Ada, 49 GB each, 147 GB total)"
+echo " Jobs: 6 models × 6 fracs × 3 datasets = 108 (gpt2, gpt2-medium, gpt2-large, qwen3-0.6B, qwen3-1.7B, qwen3-4B)"
 echo "=========================================="
 
 # ── Semaphore: token-pool via anonymous pipe on fd 200 ──────────────────────
@@ -107,7 +108,7 @@ run_model_group() {
 
     for FRAC in 0.01 0.05 0.10 0.25 0.50 1.00; do
         for DATASET in DataCo GlobalStore OAS; do
-            local gpu_id=$(( job_num % NUM_GPUS ))
+            local gpu_id="${GPUS[$(( job_num % NUM_GPUS ))]}"
             job_num=$((job_num + 1))
             local log="${log_dir}/$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')_frac${FRAC}.log"
 
@@ -146,21 +147,20 @@ run_model_group() {
 
 # ── Execute groups sequentially ──────────────────────────────────────────────
 # Groups run one at a time so per-GPU memory stays within 49 GB.
-# Parallelism = min(18, floor(49 GB / job_GB) × NUM_GPUS).
+# Parallelism = min(18, floor(49 GB / job_GB) × NUM_GPUS) — 3 GPUs (1, 2, 3).
 #
-#   gpt2         ~3 GB/job  → floor(49/3)=16 × 4 = 64  → cap at 18 (all at once)
-#   gpt2-medium  ~5 GB/job  → floor(49/5)= 9 × 4 = 36  → cap at 18
-#   gpt2-large   ~7 GB/job  → floor(49/7)= 7 × 4 = 28  → cap at 18
-#   qwen3-0.6B   ~7 GB/job  → floor(49/7)= 7 × 4 = 28  → cap at 18
-#   qwen3-1.7B  ~14 GB/job  → floor(49/14)=3 × 4 = 12
-#   qwen3-4B    ~22 GB/job  → floor(49/22)=2 × 4 =  8
-
-run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 18   #  7 GB × 18, ~5 jobs/GPU
-run_model_group "gpt2"        "gpt2"             18   #  3 GB × 18, ~5 jobs/GPU
-run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 12   # 14 GB × 12, 3 jobs/GPU
-run_model_group "gpt2-medium" "gpt2-medium"      18   #  5 GB × 18, ~5 jobs/GPU
-run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"    8   # 22 GB ×  8, 2 jobs/GPU
-run_model_group "gpt2-large"  "gpt2-large"       18   #  7 GB × 18, ~5 jobs/GPU
+#   gpt2         ~3 GB/job  → floor(49/3)=16 × 3 = 48  → cap at 18
+#   gpt2-medium  ~5 GB/job  → floor(49/5)= 9 × 3 = 27  → cap at 18
+#   gpt2-large   ~7 GB/job  → floor(49/7)= 7 × 3 = 21  → cap at 18
+#   qwen3-0.6B   ~7 GB/job  → floor(49/7)= 7 × 3 = 21  → cap at 18
+#   qwen3-1.7B  ~14 GB/job  → floor(49/14)=3 × 3 =  9
+#   qwen3-4B    ~22 GB/job  → floor(49/22)=2 × 3 =  6
+run_model_group "gpt2"        "gpt2"             1   # sequential
+run_model_group "gpt2-medium" "gpt2-medium"      1   # sequential
+run_model_group "gpt2-large"  "gpt2-large"       1   # sequential
+run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 1   # sequential
+run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 1   # sequential
+run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"   1   # sequential
 
 echo ""
 echo "=========================================="

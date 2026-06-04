@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,8 +13,14 @@ class LLMAttnPoolNetwork(nn.Module):
         self.env = env
         self.batch_size = batch_size
         # Ablation flags (read from args with safe defaults so existing code paths still work)
-        self._pool_init = getattr(env.args, "pool_init", "vocab")   # "vocab" | "random"
-        self._pool_type = getattr(env.args, "pool_type", "attention")  # "attention" | "mean"
+        self._pool_init = getattr(env.args, "pool_init", "vocab")       # "vocab" | "random"
+        self._pool_type = getattr(env.args, "pool_type", "attention")   # "attention" | "mean"
+        # Prompt variant for Experiment 6 ablation
+        self._prompt_variant = getattr(env.args, "prompt_variant", "natural")
+        # "natural"       — existing natural-language serialization (default)
+        # "numeric"       — feature values only, no names
+        # "shuffled_names"— same values, feature names randomly permuted per row
+        # "names_only"    — feature names without values (same for every sample)
 
         dataset = self.env.args.dataset
         self.group_dims = [
@@ -184,39 +191,65 @@ class LLMAttnPoolNetwork(nn.Module):
             print("[DECODER] Verification passed — all processed integers have decoder entries.")
 
     def serialize_batch(self, raw_state: torch.Tensor) -> list:
-        """Convert raw feature vectors to natural-language prompts.
+        """Convert raw feature vectors to text prompts.
 
-        Categorical columns listed in self.decoders are decoded to human-readable
-        strings; all other columns fall back to numeric formatting.
+        The format is controlled by self._prompt_variant:
+          "natural"        — natural-language key=value pairs (default VocabAlign)
+          "numeric"        — space-separated numeric values only, no feature names
+          "shuffled_names" — key=value pairs with feature names permuted per row
+          "names_only"     — feature names only, no values (same text for all rows)
         """
         raw_np = raw_state.detach().cpu().numpy()
+        suffix = (" Optimal shipping action"
+                  " (0=Standard Class, 1=Second Class, 2=First Class, 3=Same Day):")
+
+        if self._prompt_variant == "numeric":
+            return [
+                " ".join(f"{v:.3g}" for v in row) + suffix
+                for row in raw_np
+            ]
+
+        if self._prompt_variant == "names_only":
+            # Identical for every sample — feature names without values
+            names_text = " ".join(self.feature_names) + suffix
+            return [names_text] * len(raw_np)
+
+        # For "natural" and "shuffled_names" build the key=value representation
         texts = []
+        rng = np.random.default_rng(0)  # fixed seed → reproducible shuffles
         for row in raw_np:
+            if self._prompt_variant == "shuffled_names":
+                # Permute names within each group independently so groups stay intact
+                names = []
+                for s, e in self._group_slices:
+                    group_names = list(self.feature_names[s:e])
+                    rng.shuffle(group_names)
+                    names.extend(group_names)
+            else:
+                names = self.feature_names
+
             parts = []
-            for label, (s, e) in zip(self._group_labels, self._group_slices):
-                names = self.feature_names[s:e]
+            for gl, (s, e) in zip(self._group_labels, self._group_slices):
+                # Use group-permuted name slice when shuffled
+                if self._prompt_variant == "shuffled_names":
+                    offset = s
+                    grp_names = names[offset:e]
+                else:
+                    grp_names = self.feature_names[s:e]
                 vals = row[s:e]
                 kv_parts = []
-                for n, v in zip(names, vals):
+                for n, v in zip(grp_names, vals):
                     if n in self.decoders:
                         decoded = self.decoders[n].get(int(round(v)), f"{v:.3g}")
                         kv_parts.append(f"{n}={decoded}")
                     else:
                         kv_parts.append(f"{n}={v:.3g}")
-                parts.append(f"{label}: {', '.join(kv_parts)}")
-            texts.append(
-                ". ".join(parts)
-                + ". Optimal shipping action"
-                  " (0=Standard Class, 1=Second Class, 2=First Class, 3=Same Day):"
-            )
+                parts.append(f"{gl}: {', '.join(kv_parts)}")
+            texts.append(". ".join(parts) + "." + suffix)
         return texts
 
     def encode_batch(self, raw_state: torch.Tensor):
-        """Run only the frozen backbone. Returns (hidden [B,T,H], attention_mask [B,T]).
-
-        Called once per sample during hidden-state caching. After caching, training
-        never calls this again — only forward_from_hidden() runs per epoch.
-        """
+        """Run only the frozen backbone. Returns (hidden [B,T,H], attention_mask [B,T])."""
         texts = self.serialize_batch(raw_state)
         enc = self.tokenizer(
             texts,
@@ -237,6 +270,33 @@ class LLMAttnPoolNetwork(nn.Module):
                 return_dict=True,
             )
         return out.last_hidden_state.float(), attention_mask  # [B,T,H], [B,T]
+
+    def encode_batch_for_cache(self, raw_state: torch.Tensor, max_length: int = 128):
+        """Encode with fixed-length padding for cache building.
+
+        Uses padding='max_length' so every batch produces the same T, giving a
+        uniform [N, max_length, H] shape that can be written to a numpy memmap.
+        """
+        texts = self.serialize_batch(raw_state)
+        enc = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=max_length,
+        )
+        input_ids = enc["input_ids"].to(self.env.device)
+        attention_mask = enc["attention_mask"].to(self.env.device)
+
+        base = getattr(self.backbone, "model", None) or getattr(self.backbone, "transformer", self.backbone)
+        with torch.no_grad():
+            out = base(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                use_cache=False,
+                return_dict=True,
+            )
+        return out.last_hidden_state.float(), attention_mask  # [B, max_length, H], [B, max_length]
 
     def forward_from_hidden(self, hidden: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """Apply pool_attn + cls_head to pre-computed hidden states. Returns [B, 4] logits.

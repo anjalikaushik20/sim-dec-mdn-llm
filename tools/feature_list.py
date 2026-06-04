@@ -197,3 +197,54 @@ for _d in [numerical_features, categorical_features, date_features,
            product_info, order_info, customer_info, shipping_info,
            decision, label, profit, retrieva_index]:
     _d['DataCo_OOD'] = _d['DataCo']
+
+# ── SupplyChainShipmentPricing ────────────────────────────────────────────────
+numerical_features['SupplyChainShipmentPricing'] = [
+    'Line Item Quantity', 'Line Item Value', 'Pack Price', 'Unit Price',
+    'Weight (Kilograms)', 'Freight Cost (USD)', 'Line Item Insurance (USD)',
+]
+
+categorical_features['SupplyChainShipmentPricing'] = [
+    'Country', 'Managed By', 'Fulfill Via', 'Vendor INCO Term', 'Shipment Mode',
+    'Product Group', 'Sub Classification', 'Dosage Form',
+    'Unit of Measure (Per Pack)', 'Manufacturing Site', 'First Line Designation',
+    'late_risk',
+    'PO Sent to Vendor Date_year', 'PO Sent to Vendor Date_month',
+    'PO Sent to Vendor Date_day',
+    'Scheduled Delivery Date_year', 'Scheduled Delivery Date_month',
+    'Scheduled Delivery Date_day',
+]
+
+date_features['SupplyChainShipmentPricing'] = [
+    'PO Sent to Vendor Date', 'Scheduled Delivery Date',
+]
+
+product_info['SupplyChainShipmentPricing'] = [
+    'Product Group', 'Sub Classification', 'Dosage Form',
+    'Unit of Measure (Per Pack)', 'Pack Price', 'Unit Price',
+]
+
+order_info['SupplyChainShipmentPricing'] = [
+    'Line Item Quantity', 'Line Item Value', 'Line Item Insurance (USD)',
+]
+
+customer_info['SupplyChainShipmentPricing'] = [
+    'Country', 'Managed By', 'Manufacturing Site',
+]
+
+shipping_info['SupplyChainShipmentPricing'] = [
+    'Fulfill Via', 'Vendor INCO Term', 'Weight (Kilograms)', 'Freight Cost (USD)',
+    'First Line Designation',
+    'PO Sent to Vendor Date_year', 'PO Sent to Vendor Date_month',
+    'Scheduled Delivery Date_year', 'Scheduled Delivery Date_month',
+]
+
+decision['SupplyChainShipmentPricing'] = ['Shipment Mode']
+label['SupplyChainShipmentPricing']    = ['late_risk', 'days_for_shipping', 'on_time']
+profit['SupplyChainShipmentPricing']   = [0.0, 0.0, 0.0, 0.0]  # filled after first run
+
+retrieva_index['SupplyChainShipmentPricing'] = [
+    len(product_info['SupplyChainShipmentPricing']) + len(order_info['SupplyChainShipmentPricing']),
+    len(product_info['SupplyChainShipmentPricing']) + len(order_info['SupplyChainShipmentPricing'])
+    + len(customer_info['SupplyChainShipmentPricing']),
+]

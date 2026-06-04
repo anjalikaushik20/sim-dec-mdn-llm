@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--ckpt', type=str, default=None)
     parser.add_argument('--ckpt_start_epoch', type=int, default=0)
 
-    parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD'])
+    parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD', 'SupplyChainShipmentPricing'])
     parser.add_argument('--lr', type=float, default=0.01)
 
     # parser.add_argument('--mi_lr', type=float, default=0.0001)

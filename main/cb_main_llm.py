@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--ckpt', type=str, default=None)
     parser.add_argument('--ckpt_start_epoch', type=int, default=0)
 
-    parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD'])
+    parser.add_argument('--dataset', type=str, default='OAS', choices=['LSCRW', 'DataCo','GlobalStore','OAS', 'DataCo_OOD', 'SupplyChainShipmentPricing'])
     parser.add_argument('--value_network_ckpt', type=str, default=None,
         help='Path to a saved attnpool adapter (.pth) from a prior dm_train run. '
              'Loads pool_attn/cls_head weights into the value_network before eval. '
@@ -81,6 +81,11 @@ def parse_args():
         help='Ablation: "attention" = learned attn pooling (default); "mean" = uniform mean pool')
     parser.add_argument('--no_soft_labels', action='store_true', default=False,
         help='Ablation: use only hard CE loss, removing the KL-div soft-label term')
+    parser.add_argument('--prompt_variant', type=str, default='natural',
+        choices=['natural', 'numeric', 'shuffled_names', 'names_only'],
+        help='Exp 6 prompt ablation: natural=default NL serialization, '
+             'numeric=values only, shuffled_names=permuted feature names, '
+             'names_only=feature names without values')
 
     # ----------------------- logger
     parser.add_argument('--wandb', type=int, default=0)

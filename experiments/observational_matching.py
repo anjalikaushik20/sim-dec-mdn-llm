@@ -215,6 +215,66 @@ def run_matching(predictions_csv: str, dataset: str, k: int = 5):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Aggregate mode: summarise ATE across per-seed matching logs
+# ─────────────────────────────────────────────────────────────────────────────
+
+def aggregate_seeds(seed_dirs_glob: str, out_csv: str):
+    """Collect per-seed ATE values from matching logs and report mean ± std."""
+    import glob as _glob
+
+    seed_dirs = sorted(_glob.glob(seed_dirs_glob))
+    if not seed_dirs:
+        print(f"[aggregate] No directories matched: {seed_dirs_glob}")
+        return
+
+    records = []
+    for sd in seed_dirs:
+        seed = os.path.basename(sd)
+        for log_path in sorted(_glob.glob(os.path.join(sd, "*_matching.log"))):
+            dataset = os.path.basename(log_path).replace("_matching.log", "")
+            with open(log_path) as f:
+                content = f.read()
+            # Parse lines like: "  ATE = +0.0423   95% CI [+0.0211, +0.0635]   → better"
+            for line in content.splitlines():
+                if "ATE =" in line and "95% CI" in line and "→" in line:
+                    try:
+                        ate_str = line.split("ATE =")[1].split("95%")[0].strip()
+                        ate = float(ate_str)
+                        ci_str = line.split("[")[1].split("]")[0]
+                        lo_str, hi_str = ci_str.split(",")
+                        lo, hi = float(lo_str.strip()), float(hi_str.strip())
+                        # Determine metric from context (look at preceding lines is hard; use log line order)
+                        records.append({"seed": seed, "dataset": dataset,
+                                        "ate": ate, "ci_lo": lo, "ci_hi": hi})
+                    except (IndexError, ValueError):
+                        pass
+
+    if not records:
+        print("[aggregate] No ATE values parsed from logs.")
+        return
+
+    df = pd.DataFrame(records)
+    summary = (
+        df.groupby("dataset")["ate"]
+        .agg(mean_ate="mean", std_ate="std", n_seeds="count")
+        .reset_index()
+    )
+    summary["se"] = summary["std_ate"] / np.sqrt(summary["n_seeds"])
+    summary["ci95_lo"] = summary["mean_ate"] - 1.96 * summary["se"]
+    summary["ci95_hi"] = summary["mean_ate"] + 1.96 * summary["se"]
+
+    print("\n" + "="*65)
+    print("AGGREGATE ATE ACROSS SEEDS")
+    print("="*65)
+    print(summary.to_string(index=False))
+    print()
+
+    if out_csv:
+        summary.to_csv(out_csv, index=False)
+        print(f"Saved aggregate table → {out_csv}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -223,17 +283,39 @@ if __name__ == "__main__":
         description="Observational matching — out-of-simulator validation for VocabAlign"
     )
     parser.add_argument(
-        "--predictions", type=str, required=True,
+        "--mode", type=str, default="match", choices=["match", "aggregate"],
+        help="match: run per-seed matching; aggregate: summarise across seed dirs"
+    )
+    # match mode args
+    parser.add_argument(
+        "--predictions", type=str, default=None,
         help="Path to per-sample predictions CSV (from --save_predictions in cb_main_llm.py)"
     )
     parser.add_argument(
         "--dataset", type=str, default="DataCo",
-        choices=["DataCo", "GlobalStore", "OAS", "LSCRW"],
+        choices=["DataCo", "GlobalStore", "OAS", "LSCRW", "SupplyChainShipmentPricing"],
         help="Dataset used for evaluation"
     )
     parser.add_argument(
         "--k", type=int, default=5,
         help="Number of nearest neighbors for matching (default: 5)"
     )
+    # aggregate mode args
+    parser.add_argument(
+        "--seed_dirs", type=str, default=None,
+        help="Glob pattern for per-seed output directories (e.g. 'output/exp1/seed*')"
+    )
+    parser.add_argument(
+        "--out", type=str, default=None,
+        help="Output CSV path for aggregate results"
+    )
     args = parser.parse_args()
-    run_matching(args.predictions, args.dataset, k=args.k)
+
+    if args.mode == "aggregate":
+        if args.seed_dirs is None:
+            parser.error("--seed_dirs required for --mode aggregate")
+        aggregate_seeds(args.seed_dirs, args.out)
+    else:
+        if args.predictions is None:
+            parser.error("--predictions required for --mode match")
+        run_matching(args.predictions, args.dataset, k=args.k)

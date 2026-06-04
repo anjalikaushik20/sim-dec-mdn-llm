@@ -160,6 +160,9 @@ class S_Loader(torch.utils.data.Dataset):
 
     def numerical_features_process(self, ori_data, numerical_features):
         data = ori_data.copy()
+        for col in numerical_features:
+            data[col] = pd.to_numeric(data[col], errors="coerce")
+        data = data.dropna(subset=numerical_features).copy()
         scaler = StandardScaler()
         data[numerical_features] = scaler.fit_transform(data[numerical_features])
         return data

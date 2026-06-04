@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--device_id",   type=int,   default=0)
     parser.add_argument("--seed",        type=int,   default=42)
     parser.add_argument("--dataset",     type=str,   default="DataCo",
-                        choices=["DataCo", "GlobalStore", "OAS", "DataCo_OOD"])
+                        choices=["DataCo", "GlobalStore", "OAS", "DataCo_OOD", "SupplyChainShipmentPricing"])
     parser.add_argument("--train_frac",  type=float, default=1.0)
     parser.add_argument("--ckpt",        type=str,   default=None)
     parser.add_argument("--batch_size",  type=int,   default=256)

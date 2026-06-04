@@ -447,11 +447,102 @@ class CB_Session(object):
         train_acc   = total_correct / max(1, total_samples)
         return avg_loss, avg_loss_ce, avg_loss_kl, train_acc
 
+    # ── Val hidden-state cache ────────────────────────────────────────────────
+
+    _CACHE_SEQ_LEN = 128  # fixed token length used for cache encoding
+
+    def _build_val_hidden_cache(self):
+        """Pre-compute val hidden states once and write to a numpy memmap on disk.
+
+        Cache lives at  datasets/{dataset}/.hcache/{model_tag}_val_{hidden}.fp16
+        and is shared across all seeds / fracs for the same dataset + backbone.
+        Reads back via memmap — only the current batch is in RAM at any time,
+        so there is no large CPU memory spike.
+        """
+        import json
+
+        dataset   = self.env.args.dataset
+        model_name = getattr(self.env.args, "hf_model_name",
+                             self.value_network.tokenizer.name_or_path)
+        cache_dir  = os.path.join(self.env.DATA_PATH, ".hcache")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        model_tag  = model_name.replace("/", "_")
+        hidden_path = os.path.join(cache_dir, f"{model_tag}_val_H.fp16")
+        mask_path   = os.path.join(cache_dir, f"{model_tag}_val_mask.u8")
+        meta_path   = os.path.join(cache_dir, f"{model_tag}_val.json")
+
+        feature_dim = self.value_network.feature_dim
+        n_val       = self.val_inputs.shape[0]
+        H           = self.value_network.backbone.config.hidden_size
+        T           = self._CACHE_SEQ_LEN
+
+        # ── Try loading existing cache ────────────────────────────────────
+        if (os.path.exists(hidden_path) and os.path.exists(mask_path)
+                and os.path.exists(meta_path)):
+            with open(meta_path) as f:
+                meta = json.load(f)
+            if (meta.get("model_name") == model_name
+                    and meta.get("n_samples") == n_val
+                    and meta.get("hidden_size") == H
+                    and meta.get("seq_len") == T):
+                self._val_hidden_mmap = np.memmap(
+                    hidden_path, dtype=np.float16, mode="r", shape=(n_val, T, H))
+                self._val_mask_mmap = np.memmap(
+                    mask_path, dtype=np.uint8, mode="r", shape=(n_val, T))
+                gb = n_val * T * H * 2 / 1e9
+                info(f"[CACHE] Loaded val hidden cache ({n_val} samples, "
+                     f"T={T}, H={H}, {gb:.2f} GB) from {cache_dir}")
+                return
+
+        # ── Build cache ───────────────────────────────────────────────────
+        info(f"[CACHE] Building val hidden cache for {dataset} / {model_name} ...")
+        info(f"[CACHE]   {n_val} samples × T={T} × H={H}  "
+             f"({n_val * T * H * 2 / 1e9:.2f} GB on disk)")
+
+        # Pre-allocate memmap files
+        hidden_mmap = np.memmap(hidden_path, dtype=np.float16, mode="w+", shape=(n_val, T, H))
+        mask_mmap   = np.memmap(mask_path,   dtype=np.uint8,   mode="w+", shape=(n_val, T))
+
+        val_raw = self.val_inputs[:, :feature_dim]
+        if not isinstance(val_raw, torch.Tensor):
+            val_raw = torch.tensor(val_raw, dtype=torch.float32)
+        val_raw = val_raw.to(self.env.device)
+
+        bs = int(getattr(self.env.args, "batch_size", 64))
+        self.value_network.eval()
+        t0 = time.time()
+        with torch.no_grad():
+            for s in range(0, n_val, bs):
+                h, m = self.value_network.encode_batch_for_cache(
+                    val_raw[s:s + bs], max_length=T)
+                hidden_mmap[s:s + bs] = h.cpu().numpy().astype(np.float16)
+                mask_mmap[s:s + bs]   = m.cpu().numpy().astype(np.uint8)
+                if s % (bs * 20) == 0:
+                    info(f"[CACHE]   {s}/{n_val}")
+
+        hidden_mmap.flush()
+        mask_mmap.flush()
+        elapsed = time.time() - t0
+        info(f"[CACHE] Built in {elapsed:.1f}s → {cache_dir}")
+
+        with open(meta_path, "w") as f:
+            json.dump({"model_name": model_name, "n_samples": n_val,
+                       "hidden_size": H, "seq_len": T}, f)
+
+        # Re-open as read-only memmap
+        self._val_hidden_mmap = np.memmap(
+            hidden_path, dtype=np.float16, mode="r", shape=(n_val, T, H))
+        self._val_mask_mmap = np.memmap(
+            mask_path, dtype=np.uint8, mode="r", shape=(n_val, T))
+
     def dm_train(self):
         """Attention-pool head fine-tuning with periodic val evaluation and early stopping."""
         info("[LABEL] Pre-computing best-action labels via FAISS profit lookup + simulator...")
         self.precompute_best_actions()
-        info(f"[DM TRAIN] Fine-tuning attnpool head for {self.env.args.dm_epochs} epochs (backbone runs live each step).")
+        self._build_val_hidden_cache()
+        info(f"[DM TRAIN] Fine-tuning attnpool head for {self.env.args.dm_epochs} epochs "
+             f"(backbone frozen; val eval uses hidden-state cache).")
 
         scheduler_dm = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer_dm, T_max=self.env.args.dm_epochs, eta_min=1e-6
@@ -624,9 +715,18 @@ class CB_Session(object):
             else:
                 _bs = int(getattr(self.env.args, "batch_size", 64))
                 chunks = []
+                _use_cache = (mode in ("val",) and hasattr(self, "_val_hidden_mmap"))
                 for s in range(0, N_eval, _bs):
-                    h, m = self.value_network.encode_batch(raw_state[s:s + _bs])
-                    chunks.append(self.value_network.forward_from_hidden(h.float(), m).argmax(dim=1))
+                    if _use_cache:
+                        h = torch.from_numpy(
+                            self._val_hidden_mmap[s:s + _bs].astype(np.float32)
+                        ).to(self.env.device)
+                        m = torch.from_numpy(
+                            self._val_mask_mmap[s:s + _bs].astype(np.int64)
+                        ).to(self.env.device)
+                    else:
+                        h, m = self.value_network.encode_batch(raw_state[s:s + _bs])
+                    chunks.append(self.value_network.forward_from_hidden(h, m).argmax(dim=1))
                 action = torch.cat(chunks, dim=0)
                 decision_prob = F.one_hot(action, num_classes=4).float()
 

@@ -80,7 +80,9 @@ class CB_Session(object):
             info(f"Initialized LLMAttnPoolNetwork: {model_name} (batch={batch_size})")
         else:
             self.value_network = value_network
-            name = getattr(self.value_network.backbone.config, "_name_or_path", "unknown")
+            _backbone = getattr(self.value_network, 'backbone', None)
+            _cfg = getattr(_backbone, 'config', None)
+            name = getattr(_cfg, '_name_or_path', type(self.value_network).__name__)
             info(f"Initialized value network from provided instance: {name}")
 
         trainable_params = [p for p in self.value_network.parameters() if p.requires_grad]
@@ -611,6 +613,7 @@ class CB_Session(object):
         profit_count = 0
         time_sum = 0
         time_count = 0
+        _on_time_arr = None  # per-sample on_time; populated when --save_predictions is set
 
         N_eval = ori_input.shape[0]  # already limited by dm_eval_limit above
 
@@ -675,8 +678,11 @@ class CB_Session(object):
                 selected_embedding,
                 ori_input[:, feature_dim + 1:]
             )
-            time_sum += predicted_tokens[-1].argmax(dim=1).sum().item()
-            time_count += predicted_tokens[-1].shape[0]
+            _on_time_pred = predicted_tokens[-1].argmax(dim=1)
+            time_sum += _on_time_pred.sum().item()
+            time_count += _on_time_pred.shape[0]
+            if getattr(self.env.args, 'save_predictions', None) and mode == "test":
+                _on_time_arr = _on_time_pred.detach().cpu().numpy()
 
         profit = (profit_sum / profit_count) if profit_count > 0 else 0.0
         on_time_ratio = (time_sum / time_count) if time_count > 0 else 0.0
@@ -697,6 +703,21 @@ class CB_Session(object):
         self.best_pmp1 = max(self.best_pmp1, profit_min_percent[0.1])
         self.best_pmp2 = max(self.best_pmp2, profit_min_percent[0.2])
         self.best_pmp3 = max(self.best_pmp3, profit_min_percent[0.3])
+
+        save_path = getattr(self.env.args, 'save_predictions', None)
+        if save_path and mode == "test":
+            import pandas as pd
+            _pred_dir = os.path.dirname(save_path)
+            if _pred_dir:
+                os.makedirs(_pred_dir, exist_ok=True)
+            pd.DataFrame({
+                'sample_idx': range(len(action.cpu())),
+                'true_action': gt_actions.cpu().numpy(),
+                'pred_action': action.cpu().numpy(),
+                'profit': local_profits_np,
+                'on_time': _on_time_arr if _on_time_arr is not None else np.zeros(len(action)),
+            }).to_csv(save_path, index=False)
+            info(f"[PRED] Saved {len(action)} per-sample test predictions → {save_path}")
 
         return profit, on_time_ratio, profit_min_percent, time.time() - t, dm_acc_historical, dm_acc_true
 

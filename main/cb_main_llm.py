@@ -87,6 +87,14 @@ def parse_args():
     parser.add_argument('--save', type=int, default=0)
     parser.add_argument('--ckpt_dir', type=str, default=None, help='Override checkpoint save directory')
 
+    # ----------------------- Architecture / experiment flags
+    parser.add_argument('--model_type', type=str, default='llm_attn',
+        choices=['llm_attn', 'serialized_mlp', 'bert'],
+        help='Decision maker architecture: llm_attn (LLMAttnPoolNetwork), '
+             'serialized_mlp (TF-IDF + MLP ablation), or bert (frozen bert-base-uncased ablation)')
+    parser.add_argument('--save_predictions', type=str, default=None,
+        help='If set, save per-sample test predictions to this CSV path (for observational matching)')
+
     return parser.parse_args()
 
 
@@ -134,8 +142,18 @@ if args.ckpt is not None:
         info(f"Auto-selected latest checkpoint: {ckpt_path}")
     my_model.load_state_dict(torch.load(ckpt_path, map_location='cpu'))
 _raw_csv = os.path.join(my_env.DATA_PATH, f"{args.dataset}.csv")
-llm_model = LLMAttnPoolNetwork(my_env, model_name=args.hf_model_name, raw_csv_path=_raw_csv)
-info("Training: frozen backbone → learned attention pooling → vocab-aligned cls_head (4 logits) | Inference: forward() + argmax")
+_model_type = getattr(args, 'model_type', 'llm_attn')
+if _model_type == 'serialized_mlp':
+    from models.serialized_mlp_model import SerializedMLPNetwork
+    llm_model = SerializedMLPNetwork(my_env, my_loader)
+    info("Architecture: Serialized MLP — TF-IDF(max_features=1000, ngram=(1,2)) + 3-layer MLP on same text as VocabAlign")
+elif _model_type == 'bert':
+    from models.bert_model import BertAttnPoolNetwork
+    llm_model = BertAttnPoolNetwork(my_env, raw_csv_path=_raw_csv)
+    info("Architecture: Frozen BERT (bert-base-uncased, 110M params) + attention pooling + vocab-aligned cls_head")
+else:
+    llm_model = LLMAttnPoolNetwork(my_env, model_name=args.hf_model_name, raw_csv_path=_raw_csv)
+    info("Training: frozen backbone → learned attention pooling → vocab-aligned cls_head (4 logits) | Inference: forward() + argmax")
 # ----------------------------------- Session Init -----------------------------------------------------------
 info('--------------------------------Session Init------------------------------')
 my_session = CB_Session(my_env, my_model, my_loader)

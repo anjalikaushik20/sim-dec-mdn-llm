@@ -28,13 +28,13 @@ BASE_OUT_DIR="output/decision_maker/all_fracs/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
-NUM_GPUS=3
-GPUS=(1 2 3)
+NUM_GPUS=2
+GPUS=(2 3)
 
 echo "=========================================="
 echo " Sample efficiency — all models (vocabalign)"
 echo " dm_epochs=${DM_EPOCHS}  run_id=${RUN_ID}"
-echo " GPUs: 1, 2, 3 (RTX 6000 Ada, 49 GB each, 147 GB total)"
+echo " GPUs: 2, 3 (RTX 6000 Ada, 49 GB each, 98 GB total)"
 echo " Jobs: 6 models × 6 fracs × 3 datasets = 108 (gpt2, gpt2-medium, gpt2-large, qwen3-0.6B, qwen3-1.7B, qwen3-4B)"
 echo "=========================================="
 
@@ -155,12 +155,12 @@ run_model_group() {
 #   qwen3-0.6B   ~7 GB/job  → floor(49/7)= 7 × 3 = 21  → cap at 18
 #   qwen3-1.7B  ~14 GB/job  → floor(49/14)=3 × 3 =  9
 #   qwen3-4B    ~22 GB/job  → floor(49/22)=2 × 3 =  6
-run_model_group "gpt2"        "gpt2"             1   # sequential
-run_model_group "gpt2-medium" "gpt2-medium"      1   # sequential
-run_model_group "gpt2-large"  "gpt2-large"       1   # sequential
 run_model_group "qwen3-0.6B"  "Qwen/Qwen3-0.6B" 1   # sequential
 run_model_group "qwen3-1.7B"  "Qwen/Qwen3-1.7B" 1   # sequential
 run_model_group "qwen3-4B"    "Qwen/Qwen3-4B"   1   # sequential
+run_model_group "gpt2"        "gpt2"             1   # sequential
+run_model_group "gpt2-medium" "gpt2-medium"      1   # sequential
+run_model_group "gpt2-large"  "gpt2-large"       1   # sequential
 
 echo ""
 echo "=========================================="

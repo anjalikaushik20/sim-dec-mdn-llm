@@ -6,9 +6,10 @@ if [ -z "$1" ]; then
 fi
 
 SCRIPT="$1"
+shift
 mkdir -p run_logs
 LOG="run_logs/run_$(date +"%m%d%Y_%H%M").out"
-nohup bash "$SCRIPT" > "$LOG" 2>&1 &
-echo "Started: $SCRIPT"
+nohup bash "$SCRIPT" "$@" > "$LOG" 2>&1 &
+echo "Started: $SCRIPT $*"
 echo "Log:     $LOG"
 echo "PID:     $!"

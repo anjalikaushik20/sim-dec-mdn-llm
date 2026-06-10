@@ -11,29 +11,23 @@ export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:$PYTHONPATH"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_OUT_DIR="/output/latest_output/zero_shot/ood_vocabalign/${RUN_ID}"
+BASE_OUT_DIR="output/decision_maker/zeroshot/ood_vocabalign/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 echo "Zero-shot OOD evaluation (VocabAlign, dm_epochs=0) on DataCo_OOD"
-echo "Models: Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B, GPT-2, GPT-2 Medium, GPT-2 Large"
+echo "Models: Qwen3-0.6B, Qwen3-1.7B, Phi-4-mini-reasoning, GPT-2, GPT-2 Large"
 echo "Parallel execution across GPUs 0-3 (round-robin assignment)"
 
-DATACO_CKPT="/output/latest_output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
+DATACO_CKPT="output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
 
 MODELS=(
     "Qwen/Qwen3-0.6B:qwen3-0.6B"
     "Qwen/Qwen3-1.7B:qwen3-1.7B"
-    "Qwen/Qwen3-4B:qwen3-4B"
     "gpt2:gpt2"
-    "gpt2-medium:gpt2-medium"
     "gpt2-large:gpt2-large"
+    "microsoft/Phi-4-mini-reasoning:phi4-mini"
 )
 
-# GPU assignment (round-robin across 4 GPUs):
-#   GPU 0: Qwen3-0.6B, gpt2-medium
-#   GPU 1: Qwen3-1.7B, gpt2-large
-#   GPU 2: Qwen3-4B
-#   GPU 3: gpt2
 NUM_GPUS=4
 PIDS=()
 GPU_ASSIGNMENTS=()

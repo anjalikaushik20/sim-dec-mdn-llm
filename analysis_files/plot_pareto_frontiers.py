@@ -46,27 +46,49 @@ def parse_metric(log_path: str, key: str):
     return None
 
 
+_DS_NORM = {"supplychainshipmentpricing": "scsp"}
+
+
+def _norm_ds(s: str) -> str:
+    s = s.lower()
+    return _DS_NORM.get(s, s)
+
+
 def collect_ml(ml_dir: str, frac: str):
-    """Collect (dataset, baseline, profit, on_time) from ML logs."""
+    """Collect (dataset, baseline, profit, on_time) from ML logs.
+
+    Log structure: {ml_dir}/{RUN_ID}/{baseline}/{dataset}_frac{frac}.log
+    Baseline is the parent directory name. Both 'scsp_*' and
+    'supplychainshipmentpricing_*' filenames are normalised to 'scsp'.
+    Deduplicates when both naming variants exist in the same run directory.
+    """
+    BASELINES = {"rf", "xgb", "random", "historical"}
+    seen = set()   # (parent_dir, baseline, dataset, frac) — dedup alias variants
     records = []
     for log_path in glob.glob(os.path.join(ml_dir, "**", "*.log"), recursive=True):
-        profit = parse_metric(log_path, "best_profit")
+        fname = os.path.basename(log_path)
+        if frac not in fname:
+            continue
+        baseline = os.path.basename(os.path.dirname(log_path)).lower()
+        if baseline not in BASELINES:
+            continue
+        m = re.match(r"(.+)_frac", fname.lower())
+        if m is None:
+            continue
+        ds = _norm_ds(m.group(1))
+        parent_dir = os.path.dirname(log_path)
+        dedup_key = (parent_dir, baseline, ds, frac)
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
+        profit  = parse_metric(log_path, "best_profit")
         on_time = parse_metric(log_path, "best_on_time")
         if profit is None or on_time is None:
             continue
-        fname = os.path.basename(log_path)
-        # Expect {dataset}_{baseline}_frac{frac}.log or similar
-        for baseline in ("rf", "xgb", "random", "historical"):
-            if baseline in fname.lower():
-                for ds in ("dataco", "globalstore", "oas", "supplychainshipmentpricing"):
-                    if ds in fname.lower():
-                        if frac in fname:
-                            records.append({
-                                "dataset": ds, "method": baseline,
-                                "profit": profit, "on_time": on_time,
-                            })
-                            break
-                break
+        records.append({
+            "dataset": ds, "method": baseline,
+            "profit": profit, "on_time": on_time,
+        })
     return records
 
 
@@ -91,7 +113,7 @@ def collect_llm(llm_dir: str, frac: str):
         m = re.match(r"(.+)_frac", fname)
         if m:
             records.append({
-                "dataset": m.group(1).lower(), "method": f"vocabalign_{model_tag}",
+                "dataset": _norm_ds(m.group(1)), "method": f"vocabalign_{model_tag}",
                 "profit": profit, "on_time": on_time,
             })
     return records
@@ -110,7 +132,7 @@ def collect_rl(rl_dir: str, frac: str):
         m = re.match(r"(.+)_frac", fname)
         if m:
             records.append({
-                "dataset": m.group(1).lower(), "method": "rl",
+                "dataset": _norm_ds(m.group(1)), "method": "rl",
                 "profit": profit, "on_time": on_time,
             })
     return records

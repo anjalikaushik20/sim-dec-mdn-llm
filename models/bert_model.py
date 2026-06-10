@@ -16,7 +16,7 @@ class BertAttnPoolNetwork(nn.Module):
     cb_session_llm.py needs no changes.
     """
 
-    def __init__(self, env, model_name: str = "bert-base-uncased", raw_csv_path=None):
+    def __init__(self, env, model_name: str = "google-bert/bert-base-uncased", raw_csv_path=None):
         super().__init__()
         self.env = env
         self._pool_init = getattr(env.args, "pool_init", "vocab")
@@ -108,6 +108,13 @@ class BertAttnPoolNetwork(nn.Module):
             )
         return texts
 
+    def _bert_base(self):
+        return (
+            getattr(self.backbone, "bert", None)
+            or getattr(self.backbone, "model", None)
+            or getattr(self.backbone, "transformer", self.backbone)
+        )
+
     def encode_batch(self, raw_state: torch.Tensor):
         """Run frozen BERT encoder. Returns (hidden [B,T,H], attention_mask [B,T])."""
         texts = self.serialize_batch(raw_state)
@@ -120,15 +127,32 @@ class BertAttnPoolNetwork(nn.Module):
         )
         input_ids = enc["input_ids"].to(self.env.device)
         attention_mask = enc["attention_mask"].to(self.env.device)
-
-        # bert-base-uncased: backbone.bert is the BertModel encoder
-        base = (
-            getattr(self.backbone, "bert", None)
-            or getattr(self.backbone, "model", None)
-            or getattr(self.backbone, "transformer", self.backbone)
-        )
         with torch.no_grad():
-            out = base(
+            out = self._bert_base()(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                return_dict=True,
+            )
+        return out.last_hidden_state.float(), attention_mask  # [B,T,H], [B,T]
+
+    def encode_batch_for_cache(self, raw_state: torch.Tensor, max_length: int = 128):
+        """Encode with fixed-length padding for val hidden-state cache building.
+
+        Uses padding='max_length' so every batch produces the same T, giving a
+        uniform [N, max_length, H] shape that can be written to a numpy memmap.
+        """
+        texts = self.serialize_batch(raw_state)
+        enc = self.tokenizer(
+            texts,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+            max_length=max_length,
+        )
+        input_ids = enc["input_ids"].to(self.env.device)
+        attention_mask = enc["attention_mask"].to(self.env.device)
+        with torch.no_grad():
+            out = self._bert_base()(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 return_dict=True,

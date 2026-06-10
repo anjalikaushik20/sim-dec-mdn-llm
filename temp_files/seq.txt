@@ -1,0 +1,109 @@
+Here's the ordered sequence. Steps that are independent of each other are grouped together (can be run in parallel on different GPUs/terminals); steps that depend on prior results are separated.
+
+Phase 0 — SCSP dataset setup
+
+1.  python3 datasets/SupplyChainShipmentPricing/preprocess_scsp.py
+
+2.  python3 main/cb_main.py --dataset SupplyChainShipmentPricing \
+        --train_mode 1 --use_gpu 0 --epochs 5                    # smoke test
+
+3.  python3 main/cb_main.py --dataset SupplyChainShipmentPricing \
+        --train_mode 1 --use_gpu 1 --device_id 0 --wandb 1       # full training
+
+4.  # Calibrate otr_reward_coeff — run once, inspect profit/on_time in log
+    python3 main/cb_main_llm.py --dataset SupplyChainShipmentPricing \
+        --train_mode 2 --dm_epochs 50 --train_frac 0.10 \
+        --ckpt output/simulator/latest_run/ckpts/scsp/<best>.pth \
+        --hf_model_name Qwen/Qwen3-1.7B --otr_reward_coeff 2
+Phase 1 — Training sweeps (set SCSP_CKPT and SCSP_OTR env vars first)
+These 6 scripts are independent of each other — run in parallel across available GPU nodes:
+
+
+5.  bash run_nohup.sh run_sample_efficiency_all_vocabalign_parallel.sh
+
+6.  bash run_nohup.sh run_sample_efficiency_phi4_parallel.sh
+
+7.  bash run_nohup.sh run_rl_multiseed_server.sh
+
+8.  bash run_nohup.sh run_exp2_arch_ablation.sh        # Exp 3
+
+9.  bash run_nohup.sh run_ablation_3backbones_server.sh         # Exp 4
+
+10. bash run_nohup.sh run_sample_efficiency_ml_server.sh        # Exp 7 data
+
+Phase 2 — Zero-shot curve points (independent of Phase 1)
+11. bash run_nohup.sh run_zeroshot_all_server.sh
+
+Phase 3 — Exp 5 & 6 (require frac=1.00 adapters from step 5 or 6)
+Wait for Phase 1 to produce *_attnpool_best.pth files at frac=1.00, then:
+
+
+12. bash run_nohup.sh run_exp1_observational_matching.sh        # Exp 5
+
+13. bash run_nohup.sh run_prompt_ablation_server.sh             # Exp 6
+
+Phase 4 — Analysis (no new training; run after Phase 1+2 complete)
+
+14. conda run -n simenv python3 experiments/bootstrap_significance.py \
+        --vocabalign_dir output/decision_maker/all_fracs \
+        --rl_dir output/decision_maker/rl \
+        --out output/significance_table.csv
+
+15. conda run -n simenv python3 plot_pareto_frontiers.py \
+        --ml_dir output/decision_maker/ml \
+        --llm_dir output/decision_maker/all_fracs \
+        --rl_dir output/decision_maker/rl
+
+16. conda run -n simenv python3 analyze_globalstore_failure.py \
+        --sim_ckpt output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
+        --vocabalign_log <best_gs_vocabalign.log> \
+        --rl_log <best_gs_rl.log>
+
+Environment variables to set before Phase 1 (once step 3+4 are done):
+
+export SCSP_CKPT="output/simulator/latest_run/ckpts/scsp/<best_epoch>.pth"
+export SCSP_OTR=<calibrated_value>   # from step 4
+
+ANALYSIS SCRITPS:
+
+# 1 — Sample efficiency (VocabAlign + BERT + sMLP + RL)
+conda run -n simenv python3 table_sample_efficiency.py \
+    --va_dir    output/decision_maker/all_fracs/models \
+    --rl_dir    output/decision_maker/rl \
+    --arch_dirs output/exp2_arch_ablation/20260605_020523_bert \
+                output/exp2_arch_ablation/20260605_121824_sMLP \
+    --out       output/tables/sample_efficiency
+
+# 2 — Statistical significance (VocabAlign vs RL)
+conda run -n simenv python3 experiments/bootstrap_significance.py \
+    --vocabalign_dir output/decision_maker/all_fracs/models \
+    --rl_dir         output/decision_maker/rl \
+    --out            output/tables/significance_table.csv
+
+# 3 — Method ablations
+conda run -n simenv python3 table_ablations.py \
+    --base_dir output/decision_maker/ablation_3b \
+    --va_dir   output/decision_maker/all_fracs/models \
+    --out      output/tables/ablations
+
+# 4 — Prompt ablations
+conda run -n simenv python3 table_prompt_ablation.py \
+    --base_dir output/decision_maker/prompt_ablation \
+    --out      output/tables/prompt_ablation
+
+# 5 — Pareto frontier plots
+conda run -n simenv python3 plot_pareto_frontiers.py \
+    --ml_dir  output/decision_maker/ml \
+    --llm_dir output/decision_maker/all_fracs/models \
+    --rl_dir  output/decision_maker/rl \
+    --out     output/tables/pareto
+
+# 6 — Observational matching
+bash run_nohup.sh run_exp1_observational_matching.sh
+
+# 7 — GlobalStore failure analysis
+conda run -n simenv python3 analyze_globalstore_failure.py \
+    --sim_ckpt       output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth \
+    --vocabalign_log output/decision_maker/all_fracs/models/phi4_mini/seed521/phi4-mini/globalstore_frac1.00.log \
+    --rl_log         output/decision_maker/rl/20260602_154145/globalstore_frac1.00.log \
+    --out            output/tables/globalstore_failure

@@ -46,9 +46,13 @@ class SerializedMLPNetwork(nn.Module):
         self.tfidf = TfidfVectorizer(max_features=tfidf_max_features, ngram_range=(1, 2))
         self._tfidf_max_features = tfidf_max_features
 
+        # Fit TF-IDF first so we know the actual vocabulary size (may be < max_features)
+        self._fit_tfidf(loader)
+        actual_features = len(self.tfidf.vocabulary_)
+
         # Trainable MLP — all layers named cls_head.* for checkpoint compatibility
         self.cls_head = nn.Sequential(
-            nn.Linear(tfidf_max_features, 256),
+            nn.Linear(actual_features, 256),
             nn.ReLU(),
             nn.Linear(256, 128),
             nn.ReLU(),
@@ -60,9 +64,6 @@ class SerializedMLPNetwork(nn.Module):
         self.pool_attn = nn.Linear(1, 1, bias=False)
         self.pool_attn.weight.requires_grad_(False)
         self.pool_attn.to(env.device)
-
-        # Fit TF-IDF on training split before any training starts
-        self._fit_tfidf(loader)
 
     def _fit_tfidf(self, loader):
         train_X = loader.train_inputs

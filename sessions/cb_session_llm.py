@@ -397,13 +397,23 @@ class CB_Session(object):
 
         for start in range(0, N, B):
             indices = perm[start:start + B]
+            idx_np = indices.numpy()
 
-            raw = torch.from_numpy(
-                self._train_X_np[indices.numpy(), :self.value_network.feature_dim]
-            ).to(self.env.device)
-            with torch.no_grad():
-                hidden_b, mask_b = self.value_network.encode_batch(raw)
-            hidden_b = hidden_b.float()
+            if hasattr(self, '_train_hidden_mmap'):
+                # Use pre-computed training hidden states (BERT training cache)
+                hidden_b = torch.from_numpy(
+                    self._train_hidden_mmap[idx_np].astype(np.float32)
+                ).to(self.env.device)
+                mask_b = torch.from_numpy(
+                    self._train_mask_mmap[idx_np].astype(np.float32)
+                ).to(self.env.device)
+            else:
+                raw = torch.from_numpy(
+                    self._train_X_np[idx_np, :self.value_network.feature_dim]
+                ).to(self.env.device)
+                with torch.no_grad():
+                    hidden_b, mask_b = self.value_network.encode_batch(raw)
+                hidden_b = hidden_b.float()
             a_star_batch   = self.best_action_labels[indices].to(self.env.device)
             log_soft_batch = self.log_soft_labels[indices].to(self.env.device)
 
@@ -536,11 +546,102 @@ class CB_Session(object):
         self._val_mask_mmap = np.memmap(
             mask_path, dtype=np.uint8, mode="r", shape=(n_val, T))
 
+    def _build_train_hidden_cache(self):
+        """Pre-compute training hidden states once and write to a numpy memmap on disk.
+
+        Called for BERT and LLM (llm_attn) model types; skipped for serialized_mlp.
+
+        Cache lives at datasets/{dataset}/.hcache/{model_tag}_train_{frac}_H.fp16
+        The frac is included in the key so subsampled runs don't share stale caches.
+        """
+        import json
+
+        dataset    = self.env.args.dataset
+        model_name = getattr(self.env.args, "hf_model_name",
+                             self.value_network.tokenizer.name_or_path)
+        train_frac = getattr(self.env.args, "train_frac", 1.0)
+        cache_dir  = os.path.join(self.env.DATA_PATH, ".hcache")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        model_tag   = model_name.replace("/", "_")
+        frac_tag    = f"frac{train_frac:.2f}"
+        hidden_path = os.path.join(cache_dir, f"{model_tag}_train_{frac_tag}_H.fp16")
+        mask_path   = os.path.join(cache_dir, f"{model_tag}_train_{frac_tag}_mask.u8")
+        meta_path   = os.path.join(cache_dir, f"{model_tag}_train_{frac_tag}.json")
+
+        if not hasattr(self, '_train_X_np'):
+            if isinstance(self.train_inputs, torch.Tensor):
+                self._train_X_np = self.train_inputs.detach().cpu().numpy().astype(np.float32)
+            else:
+                self._train_X_np = np.asarray(self.train_inputs, dtype=np.float32)
+
+        feature_dim = self.value_network.feature_dim
+        n_train     = self._train_X_np.shape[0]
+        H           = self.value_network.backbone.config.hidden_size
+        T           = self._CACHE_SEQ_LEN
+
+        # ── Try loading existing cache ────────────────────────────────────
+        if (os.path.exists(hidden_path) and os.path.exists(mask_path)
+                and os.path.exists(meta_path)):
+            with open(meta_path) as f:
+                meta = json.load(f)
+            if (meta.get("model_name") == model_name
+                    and meta.get("n_samples") == n_train
+                    and meta.get("hidden_size") == H
+                    and meta.get("seq_len") == T):
+                self._train_hidden_mmap = np.memmap(
+                    hidden_path, dtype=np.float16, mode="r", shape=(n_train, T, H))
+                self._train_mask_mmap = np.memmap(
+                    mask_path, dtype=np.uint8, mode="r", shape=(n_train, T))
+                gb = n_train * T * H * 2 / 1e9
+                info(f"[CACHE] Loaded train hidden cache ({n_train} samples, "
+                     f"T={T}, H={H}, {gb:.2f} GB) from {cache_dir}")
+                return
+
+        # ── Build cache ───────────────────────────────────────────────────
+        gb = n_train * T * H * 2 / 1e9
+        info(f"[CACHE] Building train hidden cache for {dataset} / {model_name} ...")
+        info(f"[CACHE]   {n_train} samples × T={T} × H={H}  ({gb:.2f} GB on disk)")
+
+        hidden_mmap = np.memmap(hidden_path, dtype=np.float16, mode="w+", shape=(n_train, T, H))
+        mask_mmap   = np.memmap(mask_path,   dtype=np.uint8,   mode="w+", shape=(n_train, T))
+
+        train_raw = torch.from_numpy(self._train_X_np[:, :feature_dim]).to(self.env.device)
+
+        bs = int(getattr(self.env.args, "batch_size", 64))
+        self.value_network.eval()
+        t0 = time.time()
+        with torch.no_grad():
+            for s in range(0, n_train, bs):
+                h, m = self.value_network.encode_batch_for_cache(
+                    train_raw[s:s + bs], max_length=T)
+                hidden_mmap[s:s + bs] = h.cpu().numpy().astype(np.float16)
+                mask_mmap[s:s + bs]   = m.cpu().numpy().astype(np.uint8)
+                if s % (bs * 20) == 0:
+                    info(f"[CACHE]   {s}/{n_train}")
+
+        hidden_mmap.flush()
+        mask_mmap.flush()
+        info(f"[CACHE] Train cache built in {time.time() - t0:.1f}s → {cache_dir}")
+
+        with open(meta_path, "w") as f:
+            json.dump({"model_name": model_name, "n_samples": n_train,
+                       "hidden_size": H, "seq_len": T, "train_frac": train_frac}, f)
+
+        self._train_hidden_mmap = np.memmap(
+            hidden_path, dtype=np.float16, mode="r", shape=(n_train, T, H))
+        self._train_mask_mmap = np.memmap(
+            mask_path, dtype=np.uint8, mode="r", shape=(n_train, T))
+
     def dm_train(self):
         """Attention-pool head fine-tuning with periodic val evaluation and early stopping."""
         info("[LABEL] Pre-computing best-action labels via FAISS profit lookup + simulator...")
         self.precompute_best_actions()
-        self._build_val_hidden_cache()
+        model_type = getattr(self.env.args, "model_type", "llm_attn")
+        if model_type != "serialized_mlp":
+            self._build_val_hidden_cache()
+        if model_type not in ("serialized_mlp",):
+            self._build_train_hidden_cache()
         info(f"[DM TRAIN] Fine-tuning attnpool head for {self.env.args.dm_epochs} epochs "
              f"(backbone frozen; val eval uses hidden-state cache).")
 

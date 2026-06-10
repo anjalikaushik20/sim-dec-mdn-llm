@@ -1,7 +1,7 @@
 #!/bin/bash
 # Eval-only cross-dataset: use existing DataCo frac=1.00 adapters to evaluate
 # zero-shot on GlobalStore and OAS. No training — adapters are loaded directly
-# from output/decision_maker/DataCo/ckpts/frac1.00/{model_tag}/.
+# from output/decision_maker/checkpoints/DataCo/{model_tag}/frac1.00/.
 set -e
 
 eval "$(conda shell.bash hook)"
@@ -19,16 +19,16 @@ mkdir -p "${BASE_OUT_DIR}"
 echo "Cross-dataset eval — DataCo frac=1.00 adapters → GlobalStore + OAS"
 echo "GPU: 1"
 
-DATACO_CKPT_BASE="output/decision_maker/DataCo/ckpts/frac1.00"
+DATACO_CKPT_BASE="output/decision_maker/checkpoints/DataCo"
+
 GLOBALSTORE_CKPT="output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
 OAS_CKPT="output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
 
 MODELS=(
-    "Qwen/Qwen3-0.6B:qwen3-0.6B"
-    "Qwen/Qwen3-1.7B:qwen3-1.7B"
-    "Qwen/Qwen3-4B:qwen3-4B"
-    "gpt2:gpt2"
-    "gpt2-medium:gpt2-medium"
+    # "Qwen/Qwen3-0.6B:qwen3-0.6B"
+    # "Qwen/Qwen3-1.7B:qwen3-1.7B"
+    # "microsoft/Phi-4-mini-reasoning:phi4-mini"
+    # "gpt2:gpt2"
     "gpt2-large:gpt2-large"
 )
 
@@ -40,22 +40,21 @@ EVAL_LRS=("" "--dm_lr 0.00003")
 for ENTRY in "${MODELS[@]}"; do
     HF_NAME="${ENTRY%%:*}"
     MODEL_TAG="${ENTRY##*:}"
+
+    CKPT_DIR="${DATACO_CKPT_BASE}/${MODEL_TAG}/frac1.00"
+    if [ ! -d "${CKPT_DIR}" ]; then
+        echo "  SKIP ${MODEL_TAG}: no checkpoint dir at ${CKPT_DIR}"
+        continue
+    fi
+
+    ADAPTER_PATH=$(find "${CKPT_DIR}" -name "*_attnpool_best.pth" | sort | tail -1)
+    if [ -z "${ADAPTER_PATH}" ]; then
+        echo "  SKIP ${MODEL_TAG}: no *_attnpool_best.pth in ${CKPT_DIR}"
+        continue
+    fi
+
     OUT_DIR="${BASE_OUT_DIR}/${MODEL_TAG}"
     mkdir -p "${OUT_DIR}"
-
-    # Find the adapter for this model at frac=1.00
-    ADAPTER_DIR="${DATACO_CKPT_BASE}/${MODEL_TAG}"
-    if [ ! -d "${ADAPTER_DIR}" ]; then
-        echo "  SKIP ${MODEL_TAG}: no checkpoint dir at ${ADAPTER_DIR}"
-        continue
-    fi
-
-    ADAPTER_PATH=$(find "${ADAPTER_DIR}" -name "*_attnpool_best.pth" | sort | tail -1)
-    if [ -z "${ADAPTER_PATH}" ]; then
-        echo "  SKIP ${MODEL_TAG}: no *_attnpool_best.pth found in ${ADAPTER_DIR}"
-        continue
-    fi
-
     echo "--- ${MODEL_TAG} | adapter: ${ADAPTER_PATH} ---"
 
     for i in "${!EVAL_DATASETS[@]}"; do

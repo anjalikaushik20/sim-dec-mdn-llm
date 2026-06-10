@@ -3,7 +3,8 @@
 # Runs 4 datasets × 6 fracs × 5 seeds = 120 jobs.
 # Zero-shot (frac=0) is handled separately by run_zeroshot_all_server.sh.
 #
-# Memory: gpt2 ~3 GB float32 → max_par=18 on two 49 GB GPUs (54 GB).
+# GPU 2 only (43 GB free, shared with ablation). gpt2 ~500 MB float32 →
+# max_par=4 (2 GB peak during cache build, negligible after).
 #
 # Usage:
 #   bash run_sample_efficiency_gpt2_parallel.sh [DM_EPOCHS]
@@ -22,11 +23,11 @@ BASE_OUT_DIR="output/decision_maker/all_fracs/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
-NUM_GPUS=2
-GPUS=(2 3)
+NUM_GPUS=1
+GPUS=(2)
 MODEL_TAG="gpt2"
 HF_NAME="gpt2"
-SEEDS=(42 0 1 2 3)
+SEEDS=(42 131 521 1009 2027)
 FRACS=(0.01 0.05 0.10 0.25 0.50 1.00)
 DATASETS=(DataCo GlobalStore OAS SupplyChainShipmentPricing)
 
@@ -43,6 +44,19 @@ echo " Seeds: ${SEEDS[*]}"
 echo " GPUs: ${GPUS[*]}"
 echo " Jobs: ${#DATASETS[@]} datasets × ${#FRACS[@]} fracs × ${#SEEDS[@]} seeds = $(( ${#DATASETS[@]} * ${#FRACS[@]} * ${#SEEDS[@]} ))"
 echo "=========================================="
+
+# ── Pre-populate log dir from previously completed runs ──────────────────────
+COMPLETED_DIR="output/decision_maker/all_fracs/completed"
+if [ -d "${COMPLETED_DIR}" ]; then
+    for seed_dir in "${COMPLETED_DIR}"/seed*/; do
+        [ -d "${seed_dir}" ] || continue
+        seed=$(basename "${seed_dir}")
+        dst="${BASE_OUT_DIR}/${seed}/${MODEL_TAG}"
+        mkdir -p "${dst}"
+        cp "${seed_dir}${MODEL_TAG}/"*.log "${dst}/" 2>/dev/null || true
+    done
+    echo "Pre-populated logs from ${COMPLETED_DIR}"
+fi
 
 # ── Semaphore ────────────────────────────────────────────────────────────────
 sem_init() {
@@ -89,7 +103,7 @@ launch_job() {
 }
 
 # ── Run all jobs ─────────────────────────────────────────────────────────────
-MAX_PAR=1
+MAX_PAR=4
 sem_init "${MAX_PAR}"
 
 pids=()
@@ -109,6 +123,12 @@ for SEED in "${SEEDS[@]}"; do
             log_dir="${BASE_OUT_DIR}/seed${SEED}/${MODEL_TAG}"
             mkdir -p "${log_dir}"
             log="${log_dir}/${DS_LOWER}_frac${FRAC}.log"
+
+            completed_log="${COMPLETED_DIR}/seed${SEED}/${MODEL_TAG}/${DS_LOWER}_frac${FRAC}.log"
+            if [ -f "${completed_log}" ] && grep -q "best_pmp_3" "${completed_log}"; then
+                echo "  [SKIP] ${MODEL_TAG}  ${DATASET}  frac=${FRAC}  seed=${SEED}"
+                continue
+            fi
 
             sem_wait
             echo "  [${job_num}/${total}] GPU${gpu_id} → ${MODEL_TAG}  ${DATASET}  frac=${FRAC}  seed=${SEED}  $(date '+%H:%M:%S')"

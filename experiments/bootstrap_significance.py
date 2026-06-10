@@ -49,6 +49,13 @@ def parse_best_profit(log_path: str):
     return None
 
 
+_DS_NORM = {"supplychainshipmentpricing": "scsp"}
+
+
+def _norm_ds(s: str) -> str:
+    return _DS_NORM.get(s.lower(), s.lower())
+
+
 def collect_vocabalign(base_dir: str):
     """Return dict: (model_tag, dataset, frac) → {seed: profit}."""
     results = {}
@@ -69,7 +76,7 @@ def collect_vocabalign(base_dir: str):
         m = re.match(r"(.+)_frac([\d.]+)\.log$", fname)
         if m is None:
             continue
-        dataset_lower = m.group(1)
+        dataset_lower = _norm_ds(m.group(1))
         frac = m.group(2)
         profit = parse_best_profit(log_path)
         if profit is None:
@@ -93,7 +100,7 @@ def collect_rl(base_dir: str):
         m = re.match(r"(.+)_frac([\d.]+)\.log$", fname)
         if m is None:
             continue
-        dataset_lower = m.group(1)
+        dataset_lower = _norm_ds(m.group(1))
         frac = m.group(2)
         profit = parse_best_profit(log_path)
         if profit is None:

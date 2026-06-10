@@ -1,8 +1,8 @@
 """
 Compare RL full-training (single reference) vs VocabAlign LLM at all training fractions.
 
-RL is taken at frac=1.0 (or highest available frac if 1.0 is missing).
-LLM includes zero-shot (frac=0) + all sample-efficiency fractions.
+RL is taken at frac=1.0 (or highest available frac if 1.0 is missing), averaged across seeds.
+LLM includes zero-shot (frac=0) + all sample-efficiency fractions, averaged across runs/seeds.
 """
 
 import os
@@ -11,16 +11,70 @@ import glob
 import argparse
 from collections import defaultdict
 
-# ── Hardcoded paths ───────────────────────────────────────────────────────────
+# ── Paths ─────────────────────────────────────────────────────────────────────
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--GPU", type=int, default=0)
 _args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = str(_args.GPU)
 
-ZEROSHOT_DIR = "output/decision_maker/zeroshot/20260529_172517"
-SAMPEFF_DIRS = ["output/decision_maker/all_fracs"]
-RL_DIR       = "output/decision_maker/rl/20260529_232419"
+ZEROSHOT_RUN_DIRS_GPT2 = [
+    "output/decision_maker/zeroshot/models/gpt2/01",
+    "output/decision_maker/zeroshot/models/gpt2/02",
+    "output/decision_maker/zeroshot/models/gpt2/03",
+    "output/decision_maker/zeroshot/models/gpt2/04",
+    "output/decision_maker/zeroshot/models/gpt2/05",
+]
+
+ZEROSHOT_RUN_DIRS_GPT2_LARGE = [
+    "output/decision_maker/zeroshot/models/gpt2_large/01",
+    "output/decision_maker/zeroshot/models/gpt2_large/02",
+    "output/decision_maker/zeroshot/models/gpt2_large/03",
+    "output/decision_maker/zeroshot/models/gpt2_large/04",
+    "output/decision_maker/zeroshot/models/gpt2_large/05",
+]
+
+ZEROSHOT_RUN_DIRS_PHI4_MINI = [
+    "output/decision_maker/zeroshot/models/phi4_mini/01",
+    "output/decision_maker/zeroshot/models/phi4_mini/02",
+    "output/decision_maker/zeroshot/models/phi4_mini/03",
+    "output/decision_maker/zeroshot/models/phi4_mini/04",
+    "output/decision_maker/zeroshot/models/phi4_mini/05",
+]
+
+ZEROSHOT_RUN_DIRS_QWEN_0_6 = [
+    "output/decision_maker/zeroshot/models/qwen_0.6/01",
+    "output/decision_maker/zeroshot/models/qwen_0.6/02",
+    "output/decision_maker/zeroshot/models/qwen_0.6/03",
+    "output/decision_maker/zeroshot/models/qwen_0.6/04",
+    "output/decision_maker/zeroshot/models/qwen_0.6/05",
+]
+
+ZEROSHOT_RUN_DIRS_QWEN_1_7 = [
+    "output/decision_maker/zeroshot/models/qwen_1.7/01",
+    "output/decision_maker/zeroshot/models/qwen_1.7/02",
+    "output/decision_maker/zeroshot/models/qwen_1.7/03",
+    "output/decision_maker/zeroshot/models/qwen_1.7/04",
+    "output/decision_maker/zeroshot/models/qwen_1.7/05",
+]
+
+RL_RUN_DIRS = [
+    "output/decision_maker/rl/results/seed42",
+    "output/decision_maker/rl/results/seed131",
+    "output/decision_maker/rl/results/seed521",
+    "output/decision_maker/rl/results/seed1009",
+    "output/decision_maker/rl/results/seed2027",
+]
+
+ZEROSHOT_MODEL_RUN_DIRS = {
+    "gpt2":       ZEROSHOT_RUN_DIRS_GPT2,
+    "gpt2-large": ZEROSHOT_RUN_DIRS_GPT2_LARGE,
+    "phi4-mini":  ZEROSHOT_RUN_DIRS_PHI4_MINI,
+    "qwen3-0.6B": ZEROSHOT_RUN_DIRS_QWEN_0_6,
+    "qwen3-1.7B": ZEROSHOT_RUN_DIRS_QWEN_1_7,
+}
+
+SAMPEFF_DIRS = ["output/decision_maker/all_fracs/models"]
 OUT_DIR      = "output/decision_maker/comparisons/fullrl_vs_llm_fracs"
 
 import matplotlib
@@ -30,28 +84,39 @@ import numpy as np
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-DATASET_LABELS = {"dataco": "DataCo", "globalstore": "GlobalStore", "oas": "OAS"}
-DATASETS = ["dataco", "globalstore", "oas"]
+DATASET_LABELS = {
+    "dataco":      "DataCo",
+    "globalstore": "GlobalStore",
+    "oas":         "OAS",
+    "scsp":        "SCSP",
+}
+DATASETS = ["dataco", "globalstore", "oas", "scsp"]
 
-MODEL_ORDER = ["gpt2", "gpt2-medium", "gpt2-large", "qwen3-0.6B", "qwen3-1.7B", "qwen3-4B"]
+MODEL_ORDER = ["gpt2", "gpt2-large", "qwen3-0.6B", "qwen3-1.7B", "phi4-mini"]
 MODEL_LABELS = {
     "gpt2":        "GPT-2",
-    "gpt2-medium": "GPT-2-Med",
-    "gpt2-large":  "GPT-2-Lg",
+    "gpt2-large":  "GPT-2-Large",
     "qwen3-0.6B":  "Qwen3-0.6B",
     "qwen3-1.7B":  "Qwen3-1.7B",
-    "qwen3-4B":    "Qwen3-4B",
+    "phi4-mini":   "Phi4-mini",
 }
 MODEL_COLORS = {
     "gpt2":        "#90A4AE",
-    "gpt2-medium": "#546E7A",
     "gpt2-large":  "#263238",
     "qwen3-0.6B":  "#81D4FA",
     "qwen3-1.7B":  "#0288D1",
-    "qwen3-4B":    "#01579B",
+    "phi4-mini":   "#01579B",
 }
 RL_COLOR = "#E53935"
 METRICS = [("profit", "Profit"), ("on_time", "On-Time Ratio"), ("total", "Profit + On-Time")]
+
+# ── Dataset name normalisation ────────────────────────────────────────────────
+
+_DS_NORM = {"supplychainshipmentpricing": "scsp"}
+
+def _norm_ds(s):
+    s = s.lower()
+    return _DS_NORM.get(s, s)
 
 # ── Parsers ───────────────────────────────────────────────────────────────────
 
@@ -61,101 +126,154 @@ _SE_PAT    = re.compile(r"([a-z]+)_frac([\d.]+)\.log$")
 
 def _parse_llm(path):
     m = {}
-    for key, pat in [("profit",  re.compile(r"best_profit=([\d.]+)")),
-                     ("on_time", re.compile(r"best_on_time=([\d.]+)"))]:
-        with open(path) as f:
-            for line in f:
-                hit = pat.search(line)
-                if hit:
-                    m[key] = float(hit.group(1))
+    for key, pat in [("profit",  re.compile(r"best_profit=([\d.eE+\-]+)")),
+                     ("on_time", re.compile(r"best_on_time=([\d.eE+\-]+)"))]:
+        try:
+            with open(path) as f:
+                for line in f:
+                    hit = pat.search(line)
+                    if hit:
+                        m[key] = float(hit.group(1))
+        except OSError:
+            pass
     return m if len(m) == 2 else None
 
 
 def _parse_rl(path):
     m = {}
-    for key, pat in [("profit",  re.compile(r"best_profit\s+([\d.]+)")),
-                     ("on_time", re.compile(r"best_on_time\s+([\d.]+)"))]:
-        with open(path) as f:
-            for line in f:
-                hit = pat.search(line)
-                if hit:
-                    m[key] = float(hit.group(1))
+    for key, pat in [("profit",  re.compile(r"best_profit[=\s]+([\d.eE+\-]+)")),
+                     ("on_time", re.compile(r"best_on_time[=\s]+([\d.eE+\-]+)"))]:
+        try:
+            with open(path) as f:
+                for line in f:
+                    hit = pat.search(line)
+                    if hit:
+                        m[key] = float(hit.group(1))
+        except OSError:
+            pass
     return m if len(m) == 2 else None
 
 
 # ── Loaders ───────────────────────────────────────────────────────────────────
 
-def load_zeroshot(zs_dir):
-    """Handles {model_tag}/{dataset}.log subdir structure."""
-    data = defaultdict(dict)
-    for model_tag in sorted(os.listdir(zs_dir)):
-        model_dir = os.path.join(zs_dir, model_tag)
-        if not os.path.isdir(model_dir):
+def load_zeroshot(model_run_dirs):
+    """Load zero-shot from per-model run dirs (01–05), average across runs.
+    model_run_dirs: {model_tag: [dir1, dir2, ...]}
+    Returns: {model_tag: {dataset: {"profit": float, "on_time": float}}}
+    """
+    data = {}
+    for model, run_dirs in model_run_dirs.items():
+        ds_vals = defaultdict(list)
+        for run_dir in run_dirs:
+            if not os.path.isdir(run_dir):
+                continue
+            for path in glob.glob(os.path.join(run_dir, "*.log")):
+                m = _ZS_DS_PAT.match(os.path.basename(path))
+                if not m:
+                    continue
+                ds = _norm_ds(m.group(1))
+                metrics = _parse_llm(path)
+                if metrics is None:
+                    print(f"  [zeroshot skip] {model}/{os.path.basename(path)}")
+                    continue
+                ds_vals[ds].append((metrics["profit"], metrics["on_time"]))
+        if not ds_vals:
             continue
-        for path in glob.glob(os.path.join(model_dir, "*.log")):
-            m = _ZS_DS_PAT.match(os.path.basename(path))
-            if not m:
-                continue
-            ds = m.group(1)
-            metrics = _parse_llm(path)
-            if metrics is None:
-                print(f"  [zeroshot skip] {model_tag}/{os.path.basename(path)}")
-                continue
-            data[model_tag][ds] = metrics
-    return dict(data)
+        data[model] = {
+            ds: {
+                "profit":  float(np.mean([v[0] for v in vals])),
+                "on_time": float(np.mean([v[1] for v in vals])),
+            }
+            for ds, vals in ds_vals.items()
+        }
+    return data
 
 
 def load_sampeff_dirs(dirs):
-    merged = {}
+    """Load sample efficiency logs, averaging across seeds.
+    Handles both structures:
+      seed-based: {dir}/**/seed{N}/{model}/{dataset}_frac{f}.log
+      flat:       {dir}/{model}/{dataset}_frac{f}.log
+    """
+    raw = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
     for d in dirs:
-        for model_dir in sorted(glob.glob(os.path.join(d, "*"))):
-            if not os.path.isdir(model_dir):
+        for path in glob.glob(os.path.join(d, "**", "*.log"), recursive=True):
+            parts = path.replace("\\", "/").split("/")
+            fname = parts[-1]
+            mp = _SE_PAT.match(fname)
+            if not mp:
                 continue
-            model = os.path.basename(model_dir)
+
+            seed_seg = next((p for p in parts if re.match(r"seed\d+$", p)), None)
+            if seed_seg:
+                si = parts.index(seed_seg)
+                if si + 2 >= len(parts):
+                    continue
+                model = parts[si + 1]
+            else:
+                model = parts[-2]
+
             if model in ("ckpts", "job_queue.txt", "queue.lock"):
                 continue
-            ds_map = defaultdict(list)
-            for path in glob.glob(os.path.join(model_dir, "*.log")):
-                mp = _SE_PAT.match(os.path.basename(path))
-                if not mp:
-                    continue
-                ds, frac = mp.group(1), float(mp.group(2))
-                metrics = _parse_llm(path)
-                if metrics is None:
-                    print(f"  [sampeff skip] {model}/{os.path.basename(path)}")
-                    continue
-                ds_map[ds].append((frac, metrics["profit"], metrics["on_time"]))
-            if model not in merged:
-                merged[model] = {}
-            for ds, rows in ds_map.items():
-                existing = {r[0]: r for r in merged[model].get(ds, [])}
-                for r in rows:
-                    existing[r[0]] = r
-                merged[model][ds] = sorted(existing.values(), key=lambda r: r[0])
-    return merged
 
+            ds   = _norm_ds(mp.group(1))
+            frac = float(mp.group(2))
+            metrics = _parse_llm(path)
+            if metrics is None:
+                continue
+            raw[model][ds][frac].append((metrics["profit"], metrics["on_time"]))
 
-def load_rl_full(rl_dir):
-    """Returns dict: dataset -> (frac_used, profit, on_time) — highest complete frac."""
-    all_rows = defaultdict(list)
-    for path in glob.glob(os.path.join(rl_dir, "*.log")):
-        mp = _SE_PAT.match(os.path.basename(path))
-        if not mp:
-            continue
-        ds, frac = mp.group(1), float(mp.group(2))
-        metrics = _parse_rl(path)
-        if metrics is None:
-            print(f"  [rl skip] {os.path.basename(path)} — incomplete")
-            continue
-        all_rows[ds].append((frac, metrics["profit"], metrics["on_time"]))
     result = {}
-    for ds, rows in all_rows.items():
-        rows.sort(key=lambda r: r[0], reverse=True)
-        best = rows[0]
-        result[ds] = best
-        if best[0] < 1.0:
+    for model, ds_map in raw.items():
+        result[model] = {}
+        for ds, frac_map in ds_map.items():
+            avg_rows = []
+            for frac in sorted(frac_map):
+                vals = frac_map[frac]
+                avg_rows.append((
+                    frac,
+                    float(np.mean([v[0] for v in vals])),
+                    float(np.mean([v[1] for v in vals])),
+                ))
+            result[model][ds] = avg_rows
+    return result
+
+
+def load_rl_full(rl_run_dirs):
+    """Load RL from seed dirs at frac=1.00, average across seeds.
+    Returns: {dataset: (frac, mean_profit, mean_on_time)}
+    """
+    rows_by_ds_frac = defaultdict(list)
+    for seed_dir in rl_run_dirs:
+        if not os.path.isdir(seed_dir):
+            print(f"  [rl warn] missing: {seed_dir}")
+            continue
+        for path in glob.glob(os.path.join(seed_dir, "*.log")):
+            mp = _SE_PAT.match(os.path.basename(path))
+            if not mp:
+                continue
+            ds   = _norm_ds(mp.group(1))
+            frac = float(mp.group(2))
+            metrics = _parse_rl(path)
+            if metrics is None:
+                continue
+            rows_by_ds_frac[(ds, frac)].append((metrics["profit"], metrics["on_time"]))
+
+    ds_frac_map = defaultdict(dict)
+    for (ds, frac), vals in rows_by_ds_frac.items():
+        ds_frac_map[ds][frac] = vals
+
+    result = {}
+    for ds, frac_map in ds_frac_map.items():
+        best_frac = max(frac_map.keys())
+        vals      = frac_map[best_frac]
+        profits   = [v[0] for v in vals]
+        ontimes   = [v[1] for v in vals]
+        result[ds] = (best_frac, float(np.mean(profits)), float(np.mean(ontimes)))
+        if best_frac < 1.0:
             print(f"  [rl warn] {DATASET_LABELS.get(ds, ds)}: frac1.0 missing, "
-                  f"using frac={best[0]}")
+                  f"using frac={best_frac}")
     return result
 
 
@@ -195,7 +313,6 @@ def build_table(zs_data, se_data, rl_full, out_dir):
         lines.append(f"Dataset: {dset_label}  |  RL reference {rl_frac_str}")
         lines.append("=" * 100)
 
-        # Header
         col_labels = [f"RL-full{rl_frac_str}"] + [MODEL_LABELS.get(m, m) for m in all_models]
         hdr = f"{'Frac':<18}"
         for lbl in col_labels:
@@ -210,14 +327,12 @@ def build_table(zs_data, se_data, rl_full, out_dir):
         for frac in all_fracs:
             row = f"{frac_label(frac).replace(chr(10),' '):<18}"
 
-            # RL column — always the same full-training value
             if rl_row:
                 p, o = rl_row[1], rl_row[2]
                 row += f"  {p:>{col_w}.4f} {o:>{col_w}.4f} {p+o:>{col_w}.4f}"
             else:
                 row += f"  {'—':>{col_w}} {'—':>{col_w}} {'—':>{col_w}}"
 
-            # Model columns
             for model in all_models:
                 if frac == 0.0:
                     entry = zs_data.get(model, {}).get(ds)
@@ -256,17 +371,20 @@ def plot_per_dataset(zs_data, se_data, rl_full, out_dir):
     for ds in DATASETS:
         dset_label = DATASET_LABELS.get(ds, ds)
         rl_row = rl_full.get(ds)
-        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
-        for ax, (key, metric_label) in zip(axes, METRICS):
-            # RL horizontal reference line
+        vertical = (ds == "globalstore")
+        if vertical:
+            fig, axes = plt.subplots(3, 1, figsize=(8, 13))
+        else:
+            fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+        for i, (ax, (key, metric_label)) in enumerate(zip(axes, METRICS)):
             if rl_row:
-                rl_val = get_val(rl_row, key)
+                rl_val  = get_val(rl_row, key)
                 rl_frac = rl_row[0]
                 ax.axhline(rl_val, color=RL_COLOR, linewidth=2.5, linestyle="--",
                            label=f"RL full (frac={int(rl_frac*100)}%): {rl_val:.4f}")
 
-            # LLM lines
             for model in all_models:
                 pts = []
                 zs = zs_data.get(model, {}).get(ds)
@@ -284,11 +402,13 @@ def plot_per_dataset(zs_data, se_data, rl_full, out_dir):
                         label=MODEL_LABELS.get(model, model))
 
             ax.set_title(metric_label, fontsize=11, fontweight="bold")
-            ax.set_xlabel("Training Fraction", fontsize=9)
+            # only label x-axis on the bottom panel for vertical layout
+            if not vertical or i == len(METRICS) - 1:
+                ax.set_xlabel("Training Fraction", fontsize=9)
             ax.legend(fontsize=7, loc="best")
             ax.grid(True, alpha=0.3)
             ax.set_xticks(all_fracs)
-            ax.set_xticklabels([frac_label(f).replace("\n", "\n") for f in all_fracs], fontsize=6)
+            ax.set_xticklabels([frac_label(f) for f in all_fracs], fontsize=6)
 
         fig.suptitle(f"{dset_label} — RL Full Training vs VocabAlign at All Fractions",
                      fontsize=12, fontweight="bold")
@@ -302,7 +422,8 @@ def plot_per_dataset(zs_data, se_data, rl_full, out_dir):
 def plot_per_model(zs_data, se_data, rl_full, out_dir):
     """One figure per model: 3 metric subplots, all datasets, RL as horizontal line."""
     all_models = sorted_models(set(zs_data.keys()) | set(se_data.keys()))
-    ds_colors = {"dataco": "#2196F3", "globalstore": "#FF5722", "oas": "#4CAF50"}
+    ds_colors  = {"dataco": "#2196F3", "globalstore": "#FF5722",
+                  "oas": "#4CAF50", "scsp": "#9C27B0"}
     all_fracs  = sorted(
         {0.0} | {r[0] for ds_map in se_data.values() for rows in ds_map.values() for r in rows}
     )
@@ -313,17 +434,15 @@ def plot_per_model(zs_data, se_data, rl_full, out_dir):
 
         for ax, (key, metric_label) in zip(axes, METRICS):
             for ds in DATASETS:
-                color = ds_colors.get(ds, "#555")
+                color      = ds_colors.get(ds, "#555")
                 dset_label = DATASET_LABELS.get(ds, ds)
 
-                # RL horizontal reference
                 rl_row = rl_full.get(ds)
                 if rl_row:
                     rl_val = get_val(rl_row, key)
                     ax.axhline(rl_val, color=color, linewidth=1.8, linestyle="--", alpha=0.75,
                                label=f"{dset_label} RL-full: {rl_val:.4f}")
 
-                # LLM line
                 pts = []
                 zs = zs_data.get(model, {}).get(ds)
                 if zs:
@@ -343,7 +462,7 @@ def plot_per_model(zs_data, se_data, rl_full, out_dir):
             ax.legend(fontsize=7, loc="best")
             ax.grid(True, alpha=0.3)
             ax.set_xticks(all_fracs)
-            ax.set_xticklabels([frac_label(f).replace("\n", "\n") for f in all_fracs], fontsize=6)
+            ax.set_xticklabels([frac_label(f) for f in all_fracs], fontsize=6)
 
         fig.suptitle(f"{model_label} — VocabAlign vs RL Full Training (dashed)",
                      fontsize=12, fontweight="bold")
@@ -356,32 +475,26 @@ def plot_per_model(zs_data, se_data, rl_full, out_dir):
 
 
 def plot_grouped_fracs(zs_data, se_data, rl_full, out_dir):
-    """
-    For each dataset: one figure with 3 metric subplots.
-    x-axis = training fraction; one bar group per fraction; bars = models + RL.
-    RL is shown as a single bar repeated across all fractions (or as a hline overlay).
-    """
+    """For each dataset: bar chart per fraction, models side by side, RL as hline."""
     all_models = sorted_models(set(zs_data.keys()) | set(se_data.keys()))
     all_fracs  = sorted(
         {0.0} | {r[0] for ds_map in se_data.values() for rows in ds_map.values() for r in rows}
     )
     n_models = len(all_models)
-    x = np.arange(len(all_fracs))
-    width = 0.8 / n_models
+    x        = np.arange(len(all_fracs))
+    width    = 0.8 / n_models
 
     for ds in DATASETS:
         dset_label = DATASET_LABELS.get(ds, ds)
-        rl_row = rl_full.get(ds)
-        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+        rl_row     = rl_full.get(ds)
+        fig, axes  = plt.subplots(1, 3, figsize=(18, 5))
 
         for ax, (key, metric_label) in zip(axes, METRICS):
-            # RL horizontal reference line
             if rl_row:
                 rl_val = get_val(rl_row, key)
                 ax.axhline(rl_val, color=RL_COLOR, linewidth=2, linestyle="--", zorder=5,
                            label=f"RL full: {rl_val:.4f}")
 
-            # Model bars
             for j, model in enumerate(all_models):
                 vals = []
                 for frac in all_fracs:
@@ -401,7 +514,7 @@ def plot_grouped_fracs(zs_data, se_data, rl_full, out_dir):
 
             ax.set_title(metric_label, fontsize=11, fontweight="bold")
             ax.set_xticks(x)
-            ax.set_xticklabels([frac_label(f).replace("\n", "\n") for f in all_fracs], fontsize=7)
+            ax.set_xticklabels([frac_label(f) for f in all_fracs], fontsize=7)
             ax.set_xlabel("LLM Training Fraction", fontsize=9)
             ax.legend(fontsize=6, ncol=2)
             ax.grid(axis="y", alpha=0.3)
@@ -418,35 +531,31 @@ def plot_grouped_fracs(zs_data, se_data, rl_full, out_dir):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    for d in [ZEROSHOT_DIR, RL_DIR] + SAMPEFF_DIRS:
-        if not os.path.isdir(d):
-            print(f"Error: directory not found: {d}")
-            raise SystemExit(1)
-
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    print(f"Zero-shot dir  : {ZEROSHOT_DIR}")
     print(f"Sample-eff dirs: {SAMPEFF_DIRS}")
-    print(f"RL dir         : {RL_DIR}")
+    print(f"RL seed dirs   : {RL_RUN_DIRS}")
     print(f"Output dir     : {OUT_DIR}")
 
-    print(f"\nLoading zero-shot...")
-    zs_data = load_zeroshot(ZEROSHOT_DIR)
+    print(f"\nLoading zero-shot (averaging across runs)...")
+    zs_data = load_zeroshot(ZEROSHOT_MODEL_RUN_DIRS)
     print(f"  Models: {sorted_models(zs_data.keys())}")
+    for m, ds_map in zs_data.items():
+        print(f"    {MODEL_LABELS.get(m, m)}: {sorted(ds_map.keys())}")
 
-    print(f"Loading sample efficiency...")
+    print(f"Loading sample efficiency (averaging across seeds)...")
     se_data = load_sampeff_dirs(SAMPEFF_DIRS)
     print(f"  Models: {sorted_models(se_data.keys())}")
     for m, ds_map in se_data.items():
         fracs = sorted({r[0] for rows in ds_map.values() for r in rows})
         print(f"    {MODEL_LABELS.get(m, m)}: {fracs}")
 
-    print(f"Loading RL (full training)...")
-    rl_full = load_rl_full(RL_DIR)
+    print(f"Loading RL (averaging across seeds)...")
+    rl_full = load_rl_full(RL_RUN_DIRS)
     print("  RL full-training reference:")
     for ds, row in sorted(rl_full.items()):
         p, o = row[1], row[2]
-        print(f"    {DATASET_LABELS.get(ds,ds)}: frac={row[0]:.2f}  "
+        print(f"    {DATASET_LABELS.get(ds, ds)}: frac={row[0]:.2f}  "
               f"profit={p:.4f}  on_time={o:.4f}  total={p+o:.4f}")
 
     print("\n--- Summary Table ---")

@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument('--eva_interval', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=64)
 
-    parser.add_argument('--early_stop', type=int, default=50)
+    parser.add_argument('--early_stop', type=int, default=30)
 
     parser.add_argument('--train_mode', type=int, default=2, help='0 means traning both simulator and decision-maker, 1 means training simulator only, 2 means training decision-maker only')
 

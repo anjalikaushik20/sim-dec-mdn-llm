@@ -23,21 +23,21 @@ import matplotlib.pyplot as plt
 # ── CLI ────────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
 parser.add_argument("--out_dir", type=str,
-                    default="/data/akaush39/sim-to-dec/output/latest_output/comparisons/all_methods")
+                    default="output/decision_maker/comparisons/all_methods")
 parser.add_argument("--rl_dir", type=str,
-                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/rl_baseline")
+                    default="output/decision_maker/rl/results")
 parser.add_argument("--llm_dir", type=str,
-                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/all_vocabalign")
+                    default="output/decision_maker/all_fracs/models")
 parser.add_argument("--ml_dir", type=str,
-                    default="/data/akaush39/sim-to-dec/output/latest_output/sample_efficiency/ml_baseline")
+                    default="output/decision_maker/ml/20260529_202125")
 parser.add_argument("--zero_dir", type=str,
-                    default="/data/akaush39/sim-to-dec/output/latest_output/zero_shot/vocabalign")
+                    default="output/decision_maker/zeroshot/models")
 args = parser.parse_args()
 os.makedirs(args.out_dir, exist_ok=True)
 
 DATASETS = ["DataCo", "GlobalStore", "OAS"]
 FRACS = [0.01, 0.05, 0.10, 0.25, 0.50, 1.00]
-MODELS = ["qwen3-0.6B", "qwen3-1.7B", "qwen3-4B", "gpt2", "gpt2-medium", "gpt2-large"]
+MODELS = ["qwen3-0.6B", "qwen3-1.7B", "gpt2", "gpt2-large", "phi4-mini"]
 ML_BASELINES = ["random", "historical", "rf", "xgb"]
 BAR_FRACS = [0.01, 0.10, 1.00]
 
@@ -83,64 +83,94 @@ def ds_key(dataset):
     return dataset.lower().replace("_ood", "ood")
 
 
+# ── Model tag → directory name under all_fracs/models ─────────────────────────
+MODEL_DIR = {
+    "gpt2":      "gpt2",
+    "gpt2-large": "gpt2_large",
+    "qwen3-0.6B": "qwen3_0.6",
+    "qwen3-1.7B": "qwen3_1.7",
+    "phi4-mini":  "phi4_mini",
+}
+
 # ── Load data ──────────────────────────────────────────────────────────────────
 records = []   # list of dicts: method, model, dataset, frac, profit, on_time, total, ...
 
-# 1) RL baseline
-rl_run = latest_subdir(args.rl_dir)
-if rl_run:
-    print(f"RL dir: {rl_run}")
+# 1) RL baseline — seed-based structure: {rl_dir}/seed{N}/{ds}_frac{frac}.log
+seed_dirs = sorted(glob.glob(os.path.join(args.rl_dir, "seed*")))
+if seed_dirs:
+    print(f"RL dir: {args.rl_dir} ({len(seed_dirs)} seeds)")
     for ds in DATASETS:
         for frac in FRACS:
-            fn = os.path.join(rl_run, f"{ds_key(ds)}_frac{frac}.log")
-            if not os.path.isfile(fn):
-                fn = os.path.join(rl_run, f"{ds_key(ds)}_frac{frac:.1f}.log")
-            r = parse_log(fn)
-            if r:
+            vals = []
+            for sd in seed_dirs:
+                fn = os.path.join(sd, f"{ds_key(ds)}_frac{frac:.2f}.log")
+                if not os.path.isfile(fn):
+                    fn = os.path.join(sd, f"{ds_key(ds)}_frac{frac}.log")
+                r = parse_log(fn)
+                if r:
+                    vals.append(r)
+            if vals:
+                avg = {k: float(np.mean([v[k] for v in vals])) for k in vals[0]}
                 records.append({"method": "RL", "model": "RL", "dataset": ds,
-                                 "frac": frac, **r})
+                                 "frac": frac, **avg})
 else:
-    print("WARNING: no RL run directory found")
+    print("WARNING: no RL seed directories found")
 
-# 2) VocabAlign (sample efficiency)
-llm_run_dirs = sorted(glob.glob(os.path.join(args.llm_dir, "2*")), key=os.path.getmtime)
-if llm_run_dirs:
-    for run_dir in llm_run_dirs:
-        for model in MODELS:
-            model_dir = os.path.join(run_dir, model)
-            if not os.path.isdir(model_dir):
-                continue
-            for ds in DATASETS:
-                for frac in FRACS:
-                    fn = os.path.join(model_dir, f"{ds_key(ds)}_frac{frac:.2f}.log")
-                    if not os.path.isfile(fn):
-                        fn = os.path.join(model_dir, f"{ds_key(ds)}_frac{frac}.log")
-                    r = parse_log(fn)
-                    if r:
-                        records.append({"method": f"VocabAlign-{model}", "model": model,
-                                         "dataset": ds, "frac": frac, **r})
-    print(f"Loaded VocabAlign from {len(llm_run_dirs)} run dir(s)")
+# 2) VocabAlign — structure: {llm_dir}/{model_dir}/seed{N}/{model_tag}/{ds}_frac{frac}.log
+llm_found = 0
+for model in MODELS:
+    model_dir_name = MODEL_DIR.get(model, model.replace("-", "_"))
+    model_base = os.path.join(args.llm_dir, model_dir_name)
+    if not os.path.isdir(model_base):
+        print(f"  [llm skip] no dir for {model} at {model_base}")
+        continue
+    for ds in DATASETS:
+        for frac in FRACS:
+            vals = []
+            for sd in sorted(glob.glob(os.path.join(model_base, "seed*"))):
+                fn = os.path.join(sd, model, f"{ds_key(ds)}_frac{frac:.2f}.log")
+                if not os.path.isfile(fn):
+                    fn = os.path.join(sd, model, f"{ds_key(ds)}_frac{frac}.log")
+                r = parse_log(fn)
+                if r:
+                    vals.append(r)
+            if vals:
+                avg = {k: float(np.mean([v[k] for v in vals])) for k in vals[0]}
+                records.append({"method": f"VocabAlign-{model}", "model": model,
+                                 "dataset": ds, "frac": frac, **avg})
+                llm_found += 1
+if llm_found:
+    print(f"Loaded {llm_found} VocabAlign records")
 else:
-    print("WARNING: no VocabAlign run directories found")
+    print("WARNING: no VocabAlign logs found")
 
-# 3) Zero-shot VocabAlign (frac=0)
-zs_run = latest_subdir(args.zero_dir)
-if zs_run:
-    print(f"Zero-shot dir: {zs_run}")
-    for model in MODELS:
-        for ds in DATASETS:
-            fn = os.path.join(zs_run, f"{ds_key(ds)}_{model}.log")
+# 3) Zero-shot VocabAlign — structure: {zero_dir}/{model_dir}/XX/{ds}.log (skipped if missing)
+zs_found = 0
+for model in MODELS:
+    model_dir_name = MODEL_DIR.get(model, model.replace("-", "_"))
+    model_base = os.path.join(args.zero_dir, model_dir_name)
+    if not os.path.isdir(model_base):
+        continue
+    for ds in DATASETS:
+        vals = []
+        for run_subdir in sorted(glob.glob(os.path.join(model_base, "*"))):
+            fn = os.path.join(run_subdir, f"{ds_key(ds)}.log")
             r = parse_log(fn)
             if r:
-                records.append({"method": f"VocabAlign-{model}", "model": model,
-                                 "dataset": ds, "frac": 0.0, **r})
+                vals.append(r)
+        if vals:
+            avg = {k: float(np.mean([v[k] for v in vals])) for k in vals[0]}
+            records.append({"method": f"VocabAlign-{model}", "model": model,
+                             "dataset": ds, "frac": 0.0, **avg})
+            zs_found += 1
+if zs_found:
+    print(f"Loaded {zs_found} zero-shot records")
 
-# 4) ML baselines
-ml_run = latest_subdir(args.ml_dir)
-if ml_run:
-    print(f"ML baseline dir: {ml_run}")
+# 4) ML baselines — structure: {ml_dir}/{baseline}/{ds}_frac{frac}.log
+if os.path.isdir(args.ml_dir):
+    print(f"ML baseline dir: {args.ml_dir}")
     for bl in ML_BASELINES:
-        bl_dir = os.path.join(ml_run, bl)
+        bl_dir = os.path.join(args.ml_dir, bl)
         if not os.path.isdir(bl_dir):
             continue
         for ds in DATASETS:
@@ -153,7 +183,7 @@ if ml_run:
                     records.append({"method": bl.upper(), "model": bl, "dataset": ds,
                                      "frac": frac, **r})
 else:
-    print("WARNING: no ML baseline directory found (run run_sample_efficiency_ml_server.sh first)")
+    print("WARNING: no ML baseline directory found")
 
 df = pd.DataFrame(records)
 print(f"\nLoaded {len(df)} result records total")

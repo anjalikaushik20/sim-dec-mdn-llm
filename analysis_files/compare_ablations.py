@@ -28,9 +28,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = str(args.GPU)
 
 # ── Hardcoded paths ───────────────────────────────────────────────────────────
 
-ABLATION_BASE  = "output/decision_maker/ablation"
-ABLATION_RUN_ID = None   # set to e.g. "20260531_120000" to pin a run; None = latest
-OUT_DIR        = "output/decision_maker/comparisons/ablations"
+ABLATION_BASE  = "output/decision_maker/ablation_3b"
+ABLATION_RUN_ID = "20260605_160341"
+OUT_DIR        = "output/decision_maker/ablation_3b/20260605_160341"
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -46,14 +46,11 @@ VARIANT_COLORS = {
     "hard_labels_only": "#8E24AA",   # purple
 }
 
-MODEL_ORDER = ["gpt2", "gpt2-medium", "gpt2-large", "qwen3-0.6B", "qwen3-1.7B", "qwen3-4B"]
+MODEL_ORDER = ["gpt2", "qwen3-1.7B"]  # "phi4-mini-reasoning" still running
 MODEL_LABELS = {
-    "gpt2":        "GPT-2",
-    "gpt2-medium": "GPT-2 Med",
-    "gpt2-large":  "GPT-2 Lg",
-    "qwen3-0.6B":  "Qwen3-0.6B",
-    "qwen3-1.7B":  "Qwen3-1.7B",
-    "qwen3-4B":    "Qwen3-4B",
+    "gpt2":                "GPT-2",
+    "qwen3-1.7B":          "Qwen3-1.7B",
+    "phi4-mini-reasoning": "Phi4-mini",  # kept for future use
 }
 
 DATASETS = ["dataco", "globalstore", "oas"]
@@ -124,7 +121,7 @@ for variant in VARIANTS:
                 else:
                     missing.append(f"{variant}/{model}/{ds}_frac{frac}")
 
-all_models = sorted_models({m for v in results.values() for m in v})
+all_models = sorted_models({m for v in results.values() for m in v if m in MODEL_ORDER})
 print(f"Models found : {all_models}")
 print(f"Missing      : {len(missing)} log(s)")
 if missing:
@@ -208,186 +205,59 @@ def plot_bars_per_dataset():
 
         fig.suptitle(f"{dset_label} — Ablation Study (All Models)", fontsize=12, fontweight="bold")
         plt.tight_layout()
-        path = os.path.join(OUT_DIR, f"ablation_bars_{ds}.png")
-        fig.savefig(path, dpi=150, bbox_inches="tight")
+        out_path = os.path.join(OUT_DIR, f"ablation_bars_{ds}.png")
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
-        print(f"Saved: {path}")
+        print(f"Saved: {out_path}")
 
-plot_bars_per_dataset()
 
-# ── Plot 2: Line plots — per dataset × model, lines = variants across fracs ───
+# ── Plot 2: Line plots — profit+on_time vs frac, one line per variant ────────
 
 def plot_lines_per_model():
-    """One figure per model: subplots = datasets, lines = variants across fracs."""
-    for model in all_models:
-        model_label = MODEL_LABELS.get(model, model)
-        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-
-        for ax, ds in zip(axes, DATASETS):
-            dset_label = DATASET_LABELS[ds]
-            for v in VARIANTS:
-                pts = [(frac, results[v][model][ds][frac])
-                       for frac in FRACS if frac in results[v][model][ds]]
-                if not pts:
-                    continue
-                fracs_v = [p[0] for p in pts]
-                sums    = [p[1]["sum"] for p in pts]
-                ax.plot(fracs_v, sums, marker="o", linewidth=2, markersize=5,
-                        color=VARIANT_COLORS[v], label=VARIANT_LABELS[v])
-
-            ax.set_title(dset_label, fontsize=11, fontweight="bold")
-            ax.set_xlabel("Training Fraction", fontsize=9)
-            ax.set_ylabel("Profit + On-Time" if ds == DATASETS[0] else "")
-            ax.set_xticks(FRACS)
-            ax.set_xticklabels([f"{int(round(f*100))}%" for f in FRACS], fontsize=7)
-            ax.legend(fontsize=8)
-            ax.grid(True, alpha=0.3)
-
-        fig.suptitle(f"{model_label} — Ablation Variants Across Fractions",
-                     fontsize=12, fontweight="bold")
-        plt.tight_layout()
-        safe = re.sub(r"[^a-z0-9]+", "_", model.lower())
-        path = os.path.join(OUT_DIR, f"ablation_lines_{safe}.png")
-        fig.savefig(path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        print(f"Saved: {path}")
-
-plot_lines_per_model()
-
-# ── Plot 3: Line plots — per dataset, subplots = metrics, lines = variant×model
-
-def plot_lines_per_dataset():
-    """One figure per dataset: 3 metric subplots, one line per variant×model combo."""
+    """One figure per dataset × model: 3 subplots (profit / on_time / sum),
+    one line per ablation variant."""
     for ds in DATASETS:
         dset_label = DATASET_LABELS[ds]
-        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        for model in all_models:
+            fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+            fig.suptitle(
+                f"{dset_label} — {MODEL_LABELS.get(model, model)} — Ablation Variants",
+                fontsize=12, fontweight="bold"
+            )
+            for ax, metric_key, metric_label in zip(
+                axes,
+                ["profit", "on_time", "sum"],
+                ["Profit", "On-Time Ratio", "Profit + On-Time"]
+            ):
+                for v in VARIANTS:
+                    fracs, vals = [], []
+                    for frac in FRACS:
+                        r = results[v][model][ds].get(frac)
+                        if r:
+                            fracs.append(frac)
+                            vals.append(r[metric_key])
+                    if fracs:
+                        ax.plot(fracs, vals, marker="o", linewidth=2, markersize=5,
+                                color=VARIANT_COLORS[v],
+                                label=VARIANT_LABELS[v])
 
-        for ax, metric in zip(axes, ["profit", "on_time", "sum"]):
-            metric_label = {"profit": "Profit", "on_time": "On-Time", "sum": "Profit + On-Time"}[metric]
-            for v in VARIANTS:
-                for model in all_models:
-                    pts = [(frac, results[v][model][ds][frac])
-                           for frac in FRACS if frac in results[v][model][ds]]
-                    if not pts:
-                        continue
-                    fracs_v = [p[0] for p in pts]
-                    vals    = [p[1][metric] for p in pts]
-                    ax.plot(fracs_v, vals, marker="o", linewidth=1.5, markersize=4,
-                            color=VARIANT_COLORS[v], alpha=0.6)
-
-            # Add one legend entry per variant
-            for v in VARIANTS:
-                ax.plot([], [], color=VARIANT_COLORS[v], linewidth=2,
-                        label=VARIANT_LABELS[v])
-
-            ax.set_title(metric_label, fontsize=11, fontweight="bold")
-            ax.set_xlabel("Training Fraction", fontsize=9)
-            ax.set_xticks(FRACS)
-            ax.set_xticklabels([f"{int(round(f*100))}%" for f in FRACS], fontsize=7)
-            ax.legend(fontsize=8)
-            ax.grid(True, alpha=0.3)
-
-        fig.suptitle(f"{dset_label} — All Models × Ablation Variants",
-                     fontsize=12, fontweight="bold")
-        plt.tight_layout()
-        path = os.path.join(OUT_DIR, f"ablation_lines_{ds}.png")
-        fig.savefig(path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        print(f"Saved: {path}")
-
-plot_lines_per_dataset()
-
-# ── Plot 4: Line plots — per variant, subplots = datasets, lines = models ─────
-
-MODEL_COLORS = {
-    "gpt2":        "#90A4AE",
-    "gpt2-medium": "#546E7A",
-    "gpt2-large":  "#263238",
-    "qwen3-0.6B":  "#81D4FA",
-    "qwen3-1.7B":  "#0288D1",
-    "qwen3-4B":    "#01579B",
-}
-
-METRIC_KEYS   = ["profit", "on_time", "sum"]
-METRIC_LABELS = {"profit": "Profit", "on_time": "On-Time Ratio", "sum": "Profit + On-Time"}
-
-def plot_lines_per_variant():
-    """Per variant × dataset: 3 metric subplots, one line per model — same style
-    as VocabAlign sample efficiency plots but without RL reference."""
-    for v in VARIANTS:
-        for ds in DATASETS:
-            fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-            for ax, metric in zip(axes, METRIC_KEYS):
-                for model in all_models:
-                    pts = [(frac, results[v][model][ds][frac])
-                           for frac in FRACS if frac in results[v][model][ds]]
-                    if not pts:
-                        continue
-                    fracs_v = [p[0] for p in pts]
-                    vals    = [p[1][metric] for p in pts]
-                    ax.plot(fracs_v, vals, marker="o", linewidth=2, markersize=5,
-                            color=MODEL_COLORS.get(model, "#555"),
-                            label=MODEL_LABELS.get(model, model))
-
-                ax.set_title(METRIC_LABELS[metric], fontsize=11, fontweight="bold")
+                ax.set_title(metric_label, fontsize=10, fontweight="bold")
                 ax.set_xlabel("Training Fraction", fontsize=9)
-                ax.set_ylabel(METRIC_LABELS[metric] if metric == "profit" else "")
                 ax.set_xticks(FRACS)
                 ax.set_xticklabels([f"{int(round(f*100))}%" for f in FRACS], fontsize=7)
-                ax.legend(fontsize=8)
+                ax.legend(fontsize=7, loc="best")
                 ax.grid(True, alpha=0.3)
+                ax.set_ylim(bottom=0)
 
-            dset_label = DATASET_LABELS[ds]
-            fig.suptitle(f"{dset_label} — {VARIANT_LABELS[v]}",
-                         fontsize=12, fontweight="bold")
             plt.tight_layout()
-            safe_v = re.sub(r"[^a-z0-9]+", "_", v.lower())
-            path = os.path.join(OUT_DIR, f"ablation_variant_{safe_v}_{ds}.png")
-            fig.savefig(path, dpi=150, bbox_inches="tight")
+            out_path = os.path.join(OUT_DIR, f"ablation_lines_{ds}_{model}.png")
+            fig.savefig(out_path, dpi=150, bbox_inches="tight")
             plt.close(fig)
-            print(f"Saved: {path}")
+            print(f"Saved: {out_path}")
 
-plot_lines_per_variant()
 
-# ── Plot 5: Summary grid — per variant, 3×3 (datasets × metrics), lines = models
+# ── Run ───────────────────────────────────────────────────────────────────────
 
-def plot_variant_summary():
-    """Per variant × metric: one figure with 3 dataset subplots, lines per model.
-    Produces 9 figures total (3 variants × 3 metrics)."""
-    for v in VARIANTS:
-        for metric in METRIC_KEYS:
-            fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-            for ax, ds in zip(axes, DATASETS):
-                for model in all_models:
-                    pts = [(frac, results[v][model][ds][frac])
-                           for frac in FRACS if frac in results[v][model][ds]]
-                    if not pts:
-                        continue
-                    fracs_v = [p[0] for p in pts]
-                    vals    = [p[1][metric] for p in pts]
-                    ax.plot(fracs_v, vals, marker="o", linewidth=2, markersize=5,
-                            color=MODEL_COLORS.get(model, "#555"),
-                            label=MODEL_LABELS.get(model, model))
-
-                ax.set_title(DATASET_LABELS[ds], fontsize=11, fontweight="bold")
-                ax.set_xlabel("Training Fraction", fontsize=9)
-                ax.set_ylabel(METRIC_LABELS[metric] if ds == DATASETS[0] else "")
-                ax.set_xticks(FRACS)
-                ax.set_xticklabels([f"{int(round(f*100))}%" for f in FRACS], fontsize=7)
-                ax.legend(fontsize=8)
-                ax.grid(True, alpha=0.3)
-
-            fig.suptitle(f"{VARIANT_LABELS[v]} — {METRIC_LABELS[metric]} — All Models",
-                         fontsize=12, fontweight="bold")
-            plt.tight_layout()
-            safe_v = re.sub(r"[^a-z0-9]+", "_", v.lower())
-            path = os.path.join(OUT_DIR, f"ablation_variant_{safe_v}_{metric}.png")
-            fig.savefig(path, dpi=150, bbox_inches="tight")
-            plt.close(fig)
-            print(f"Saved: {path}")
-
-plot_variant_summary()
-
-print(f"\nAll ablation outputs saved to: {OUT_DIR}")
+plot_bars_per_dataset()
+plot_lines_per_model()
+print(f"\nAll outputs saved to: {OUT_DIR}")

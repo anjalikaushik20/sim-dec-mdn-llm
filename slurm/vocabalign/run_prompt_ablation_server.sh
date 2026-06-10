@@ -11,9 +11,9 @@
 #   shuffled_names — key=value pairs with feature names randomly permuted per row
 #   names_only     — feature names without values (same text for all rows)
 #
-# Backbones: gpt2, Qwen/Qwen3-1.7B
-# Datasets:  DataCo, OAS
-# Total: 4 × 2 × 2 × 5 = 80 jobs
+# Backbones: gpt2, Qwen/Qwen3-1.7B  [phi4-mini-reasoning commented out]
+# Datasets:  GlobalStore, SupplyChainShipmentPricing
+# Total: 4 × 2 × 2 × 5 = 80 jobs  (160 if phi4 uncommented)
 #
 # Env overrides:
 #   SEEDS — space-separated seed list (default: 42 0 1 2 3)
@@ -35,19 +35,29 @@ BASE_OUT_DIR="output/decision_maker/prompt_ablation/${RUN_ID}"
 mkdir -p "${BASE_OUT_DIR}"
 
 NUM_GPUS=2
-GPUS=(2 3)
+GPUS=(1 3)
 DM_EPOCHS="${1:-${DM_EPOCHS:-200}}"
-IFS=' ' read -r -a SEEDS <<< "${SEEDS:-42 0 1 2 3}"
+IFS=' ' read -r -a SEEDS <<< "${SEEDS:-42 131 521 1009 2027}"
 
-DATACO_CKPT="output/simulator/latest_run/ckpts/dataco/confused-frog-888_epoch378.pth"
-OAS_CKPT="output/simulator/latest_run/ckpts/oas/fiery-sky-888_epoch310.pth"
+GS_CKPT="output/simulator/latest_run/ckpts/globalstore/flowing-jazz-888_epoch280.pth"
+SCSP_CKPT="${SCSP_CKPT:-output/simulator/latest_run/ckpts/scsp/best.pth}"
+SCSP_OTR="${SCSP_OTR:-2}"
 
 VARIANTS=(natural numeric shuffled_names names_only)
-DATASETS=(DataCo OAS)
+DATASETS=(GlobalStore SupplyChainShipmentPricing)
 
-declare -A MODEL_HF=([gpt2]="gpt2" [qwen3-1.7B]="Qwen/Qwen3-1.7B")
+declare -A MODEL_HF=(
+    [gpt2]="gpt2"
+    [qwen3-1.7B]="Qwen/Qwen3-1.7B"
+    [phi4-mini-reasoning]="microsoft/Phi-4-mini-reasoning"
+)
 MODELS=(gpt2 qwen3-1.7B)
-declare -A MODEL_MAXPAR=([gpt2]=18 [qwen3-1.7B]=6)
+declare -A MODEL_MAXPAR=(
+    [gpt2]=18               # 0.5 GB × 9/GPU = 4.5 GB peak
+    [qwen3-1.7B]=8          # 7 GB × 4/GPU = 28 GB; cache exists → no build race
+    [phi4-mini-reasoning]=2 # 15 GB × 1/GPU = 15 GB; must stay at 2: no cache yet,
+                            #   >2 concurrent would race on the same frac1.00 cache file
+)
 
 total=$(( ${#VARIANTS[@]} * ${#MODELS[@]} * ${#DATASETS[@]} * ${#SEEDS[@]} ))
 echo "=========================================="
@@ -79,10 +89,10 @@ launch_job() {
     local variant="$1" dataset="$2" hf_name="$3" seed="$4" gpu_id="$5" log="$6"
     local extra_args=""
     case "${dataset}" in
-        DataCo)
-            extra_args="--otr_reward_coeff 2 --ckpt ${DATACO_CKPT}" ;;
-        OAS)
-            extra_args="--dm_lr 0.00003 --otr_reward_coeff 50 --ckpt ${OAS_CKPT}" ;;
+        GlobalStore)
+            extra_args="--otr_reward_coeff 10 --ckpt ${GS_CKPT}" ;;
+        SupplyChainShipmentPricing)
+            extra_args="--otr_reward_coeff ${SCSP_OTR} --ckpt ${SCSP_CKPT}" ;;
     esac
     # shellcheck disable=SC2086
     CUDA_VISIBLE_DEVICES="${gpu_id}" python3 main/cb_main_llm.py \
@@ -112,11 +122,12 @@ run_model() {
         for SEED in "${SEEDS[@]}"; do
             for DATASET in "${DATASETS[@]}"; do
                 local gpu_id="${GPUS[$(( job_num % NUM_GPUS ))]}"
-                local DS_LOWER
-                DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]')
+                local DS_LOWER DS_TAG
+                DS_LOWER=$(echo "${DATASET}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+                DS_TAG="${DS_LOWER/supplychainshipmentpricing/scsp}"
                 local log_dir="${BASE_OUT_DIR}/${VARIANT}/${model_tag}/seed${SEED}"
                 mkdir -p "${log_dir}"
-                local log="${log_dir}/${DS_LOWER}.log"
+                local log="${log_dir}/${DS_TAG}.log"
 
                 job_num=$(( job_num + 1 ))
                 sem_wait
@@ -142,6 +153,7 @@ run_model() {
 
 run_model "gpt2"       "${MODEL_MAXPAR[gpt2]}"
 run_model "qwen3-1.7B" "${MODEL_MAXPAR[qwen3-1.7B]}"
+# run_model "phi4-mini-reasoning" "${MODEL_MAXPAR[phi4-mini-reasoning]}"
 
 echo ""
 echo "=========================================="

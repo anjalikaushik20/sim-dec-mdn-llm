@@ -1,0 +1,55 @@
+nvidia-smi pmon -c 1 | awk '
+NR<=2 {print; next}
+$2 ~ /^[0-9]+$/ {
+    pid=$2
+    cmd="ps -o user= -p " pid
+    cmd | getline user
+    close(cmd)
+    print $0, user
+}'
+
+python -m pip install -r requirements.txt
+export PYTHONPATH="/home/local/ASURITE/Anjali/sim-dec-mdn-llm:${PYTHONPATH:-}"
+chmod +x run_qwen_3_1.7B_server.sh 
+./run_qwen_3_1.7B_server.sh
+bash run_nohup.sh run_qwen_3_0.6B_server.sh
+
+run_sample_efficiency_gonogo_server.sh
+run_sample_efficiency_qwen3-1.7B_server
+run_sample_efficiency_rl_server.sh
+grep 'best_profit\|best_on_time' output/latest_output/sample_efficiency/**/*.log
+
+plot_sample_efficiency.py <run_dir>
+tail -f /tmp/zeroshot_scheduled.log
+
+ps -p 628428 -o pid,cmd --no-headers 2>/dev/null || echo "Process not found"
+
+ABLATIONS:
+Everything in the plan is now complete. Here's a summary of what was built:
+
+OOD Analysis (analyze_ood_shift.py) — ran successfully and found a very strong shift:
+
+Shipping mode: Subset_2 has zero First Class and Same Day orders (KL=4.98) — the two hardest-to-predict modes vanish entirely
+Late delivery risk: 49% → 85%
+Actual shipping days: 3.0 → 5.2
+6 new run scripts (all executable):
+
+run_ood_vocabalign_server.sh — 6 models × 6 fracs on DataCo_OOD
+run_ood_rl_server.sh — RL baseline on DataCo_OOD
+run_ood_zeroshot_vocabalign_server.sh — zero-shot on DataCo_OOD
+run_sample_efficiency_ml_server.sh — RF/XGBoost/Random/Historical on all datasets
+run_ablation_vocabalign_server.sh — 4 variants × 3 fracs × 3 datasets (Qwen3-1.7B)
+run_multiseed_vocabalign_server.sh — seeds 42/123/456 for Qwen3-1.7B
+3 comparison scripts (all syntax-checked, compare_all_methods.py already produces plots from existing data):
+
+compare_all_methods.py — unified table + bar charts (handles missing ML/OOD data gracefully)
+compare_ablations.py — grouped bar + line charts per ablation variant
+compare_ood_vs_ind.py — degradation analysis + per-model IND vs OOD plots
+Suggested execution order:
+
+bash run_ood_zeroshot_vocabalign_server.sh (fast, no fine-tuning)
+bash run_sample_efficiency_ml_server.sh (no GPU needed)
+bash run_ood_rl_server.sh + bash run_ood_vocabalign_server.sh (GPU)
+bash run_ablation_vocabalign_server.sh (GPU, Qwen3-1.7B only)
+bash run_multiseed_vocabalign_server.sh (GPU)
+python3 compare_all_methods.py && python3 compare_ablations.py && python3 compare_ood_vs_ind.py
